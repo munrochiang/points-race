@@ -442,13 +442,22 @@ function newId() { return String(idSeq++); }
 
 function curGroup() { return groups.find(g => g.id === currentGroupId) || null; }
 
+// Compute default sprint laps: last (N-3) laps, i.e. laps (N-4) down to 0
+function defaultSprintLaps(totalLaps) {
+  const laps = [];
+  for (let i = totalLaps - 4; i >= 0; i--) laps.push(i);
+  return laps;
+}
+
 // ═══════════ Setup ═══════════
 
 function addGroup() {
   const el = document.getElementById('inp-group-name');
   const name = el.value.trim();
   if (!name) return;
-  const g = { id: newId(), name, athletes: [], sprintLaps: [11,10,9,8,7,6,5,4,3,2,1,0], currentSprintIdx: 0, history: [], lapLength: 200, raceDistance: 3000 };
+  const lapLength = 200, raceDistance = 3000;
+  const totalLaps = raceDistance / lapLength;
+  const g = { id: newId(), name, athletes: [], sprintLaps: defaultSprintLaps(totalLaps), currentSprintIdx: 0, history: [], lapLength, raceDistance };
   groups.push(g);
   el.value = '';
   expandedGroupId = g.id; // auto-expand newly created group
@@ -499,13 +508,17 @@ function renderGroupBody(g) {
   `).join('');
 
   let sprintHtml = '';
-  for (let i = 14; i >= 0; i--) {
-    const isFinal = i === 0;
-    const isActive = g.sprintLaps.includes(i);
-    let cls = 'lap-chip';
-    if (isFinal) cls += ' final';
-    else if (isActive) cls += ' active';
-    sprintHtml += `<div class="${cls}" onclick="toggleSprintLap('${g.id}', ${i})">${isFinal ? '🏁' : i}</div>`;
+  if (lapOk) {
+    for (let i = totalLaps - 1; i >= 0; i--) {
+      const isFinal = i === 0;
+      const isActive = g.sprintLaps.includes(i);
+      let cls = 'lap-chip';
+      if (isFinal) cls += ' final';
+      else if (isActive) cls += ' active';
+      sprintHtml += `<div class="${cls}" onclick="toggleSprintLap('${g.id}', ${i})">${isFinal ? '🏁' : i}</div>`;
+    }
+  } else {
+    sprintHtml = '<div style="font-size:13px;color:var(--text-dim)">請先設定有效的比賽距離</div>';
   }
 
   const totalLaps = g.raceDistance / g.lapLength;
@@ -525,7 +538,7 @@ function renderGroupBody(g) {
       </div>
     </div>
     <div>
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">質距</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">賽距</div>
       <div class="dist-options">
         ${distOptions.map(d => `<button class="dist-btn ${g.raceDistance === d && !isCustom ? 'active' : ''}" onclick="setRaceDistance('${g.id}', ${d})">${d}m</button>`).join('')}
         <button class="dist-btn ${isCustom ? 'active' : ''}" onclick="setRaceDistance('${g.id}', 'custom')">其他</button>
@@ -587,6 +600,8 @@ function setLapLength(groupId, val) {
   const n = parseInt(val);
   if (!n || n <= 0) return;
   g.lapLength = n;
+  const total = g.raceDistance / g.lapLength;
+  if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
   renderGroupsList();
 }
 
@@ -594,11 +609,11 @@ function setRaceDistance(groupId, val) {
   const g = groups.find(x => x.id === groupId);
   if (!g) return;
   if (val === 'custom') {
-    // if currently a preset, switch to a blank custom value (0 triggers the input)
     if ([3000, 5000].includes(g.raceDistance)) g.raceDistance = 0;
-    // else keep existing custom value
   } else {
     g.raceDistance = parseInt(val);
+    const total = g.raceDistance / g.lapLength;
+    if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
   }
   renderGroupsList();
 }
@@ -609,6 +624,8 @@ function setCustomDistance(groupId, val) {
   const n = parseInt(val);
   if (!n || n <= 0) return;
   g.raceDistance = n;
+  const total = g.raceDistance / g.lapLength;
+  if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
   renderGroupsList();
 }
 
