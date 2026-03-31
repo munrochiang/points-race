@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>計點賽計分器 — UI Prototype</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --star-bg: #f5a623;
+    --text: #eee;
+    --text-dim: #8899aa;
+    --success: #00b894;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.95); opacity: 0.85; }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+  .btn-undo {
+    background: var(--surface);
+    color: var(--text);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    padding: 8px 14px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-undo .undo-count {
+    background: rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 2px 7px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Setup sections ── */
+  .setup-section {
+    margin: 12px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+  }
+  .setup-section h2 {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .setup-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .setup-form input {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    font-family: inherit;
+  }
+  .setup-form input::placeholder { color: var(--text-dim); }
+  .btn-add {
+    background: var(--success);
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+
+  /* ── Sprint laps grid ── */
+  .sprint-laps-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .lap-chip {
+    width: 48px;
+    height: 42px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .lap-chip.active {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.2);
+    color: #fff;
+  }
+  .lap-chip.final {
+    border-color: var(--star-bg);
+    background: rgba(245, 166, 35, 0.2);
+    color: var(--star-bg);
+    pointer-events: none;
+  }
+
+  /* ── Athlete list (setup) ── */
+  .athlete-list {
+    padding: 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .athlete-setup-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid transparent;
+  }
+  .athlete-setup-card.starred {
+    border-color: var(--star-bg);
+    background: linear-gradient(135deg, rgba(245,166,35,0.1), var(--surface));
+  }
+  .star-toggle {
+    font-size: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .athlete-setup-card .bib {
+    background: var(--card);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 22px;
+    min-width: 52px;
+    text-align: center;
+  }
+  .athlete-setup-card .name {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .start-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    text-align: center;
+  }
+  .start-bar .btn-primary {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    border-radius: var(--radius);
+  }
+
+  /* ═══════════ Race Screen ═══════════ */
+
+  .sprint-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-wrap: wrap;
+  }
+  .sprint-bar .lap-label { font-size: 13px; color: var(--text-dim); }
+  .sprint-bar .lap-num { font-size: 22px; font-weight: 800; }
+  .sprint-bar .lap-type {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .lap-type.normal { background: rgba(233,69,96,0.2); color: var(--accent); }
+  .lap-type.final  { background: rgba(245,166,35,0.25); color: var(--star-bg); }
+  .sprint-bar .sprint-info {
+    flex: 1;
+    text-align: right;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .sprint-bar .sprint-info strong { color: var(--text); }
+  .btn-next-lap {
+    background: var(--card);
+    color: var(--text);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Commit timer ── */
+  .commit-timer-bar {
+    height: 3px;
+    background: var(--success);
+    width: 0;
+    position: sticky;
+    top: 49px;
+    z-index: 9;
+  }
+
+  /* ── Round picks display ── */
+  .round-picks {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    min-height: 38px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .round-pick-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .round-pick-tag.pts3 { background: rgba(233,69,96,0.25); color: var(--accent); }
+  .round-pick-tag.pts2 { background: rgba(245,166,35,0.25); color: var(--star-bg); }
+  .round-pick-tag.pts1 { background: rgba(0,184,148,0.25); color: var(--success); }
+  .round-picks-empty {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* ── Race athlete cards ── */
+  .race-list {
+    padding: 4px 12px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .athlete-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1),
+                border-color 0.2s,
+                background 0.2s,
+                opacity 0.2s;
+  }
+  .athlete-card:active { transform: scale(0.97); }
+  .athlete-card.starred {
+    border-color: var(--star-bg);
+    background: linear-gradient(135deg, rgba(245,166,35,0.12), var(--surface));
+  }
+  .athlete-card.picked {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  @keyframes card-tap {
+    0%   { box-shadow: inset 0 0 0 0 rgba(255,255,255,0.4); }
+    50%  { box-shadow: inset 0 0 24px 4px rgba(255,255,255,0.2); }
+    100% { box-shadow: inset 0 0 0 0 rgba(255,255,255,0); }
+  }
+  .athlete-card.tap-flash { animation: card-tap 0.35s ease-out; }
+
+  .rank {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dim);
+    min-width: 24px;
+    text-align: center;
+  }
+  .rank.top1 { color: #ffd700; font-size: 18px; }
+  .rank.top2 { color: #c0c0c0; font-size: 16px; }
+  .rank.top3 { color: #cd7f32; font-size: 16px; }
+
+  .rank-change {
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 24px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .rank-change.up   { color: var(--success); opacity: 1; }
+  .rank-change.down { color: var(--accent); opacity: 1; }
+
+  .athlete-info { flex: 1; min-width: 0; }
+  .athlete-info .top-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .athlete-info .bib {
+    background: var(--card);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+  .athlete-card.starred .star-icon {
+    color: var(--star-bg);
+    font-size: 16px;
+  }
+  .athlete-info .name {
+    font-size: 17px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .score {
+    font-size: 24px;
+    font-weight: 800;
+    min-width: 44px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-unit {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-dim);
+    margin-left: 2px;
+  }
+  .score .pending-badge {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--star-bg);
+    margin-left: 4px;
+  }
+
+  @media (min-width: 480px) {
+    .athlete-card { padding: 16px 20px; }
+    .athlete-info .bib { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════ SETUP SCREEN ════════════ -->
+<div id="setup-screen" class="screen active">
+  <div class="header">
+    <h1>🏁 計點賽計分器</h1>
+  </div>
+
+  <div class="setup-section">
+    <h2>📋 選手名單</h2>
+    <div class="setup-form">
+      <input id="inp-bib" type="number" placeholder="號碼布" inputmode="numeric" style="max-width:90px">
+      <input id="inp-name" type="text" placeholder="選手姓名">
+      <button class="btn btn-add" onclick="addAthlete()">＋ 新增</button>
+    </div>
+  </div>
+
+  <div id="setup-list" class="athlete-list"></div>
+
+  <div class="setup-section">
+    <h2>🏃 得分圈設定 <span style="font-weight:400;font-size:12px;color:var(--text-dim)">（點選切換｜🏁 = 最後一圈，固定得分）</span></h2>
+    <div id="sprint-laps-grid" class="sprint-laps-grid"></div>
+  </div>
+
+  <div style="height: 80px"></div>
+  <div class="start-bar">
+    <button class="btn btn-primary" onclick="startRace()">▶ 開始比賽</button>
+  </div>
+</div>
+
+<!-- ════════════ RACE SCREEN ════════════ -->
+<div id="race-screen" class="screen">
+  <div class="header">
+    <h1>🏁 比賽中</h1>
+    <div class="header-actions">
+      <button class="btn btn-undo" onclick="undoLastPick()">
+        ↩ 復原 <span class="undo-count" id="undo-count">0</span>
+      </button>
+      <button class="btn btn-outline" onclick="backToSetup()">⚙</button>
+    </div>
+  </div>
+
+  <div class="sprint-bar" id="sprint-bar">
+    <span class="lap-label">得分圈</span>
+    <span class="lap-num" id="lap-num">14</span>
+    <span class="lap-type normal" id="lap-type">得分圈</span>
+    <span class="sprint-info" id="sprint-info">點選得分選手</span>
+    <button class="btn btn-next-lap" onclick="prevSprintLap()">◂ 上一圈</button>
+    <button class="btn btn-next-lap" onclick="nextSprintLap()">下一圈 ▸</button>
+  </div>
+
+  <div id="commit-timer-bar" class="commit-timer-bar"></div>
+
+  <div id="round-picks" class="round-picks">
+    <span class="round-picks-empty">👆 點選得分選手</span>
+  </div>
+
+  <div id="race-list" class="race-list"></div>
+</div>
+
+<script>
+// ═══════════ State ═══════════
+let athletes = [];
+let history = [];
+const MAX_UNDO = 20;
+
+// Sprint laps: sorted desc. 0 = final lap (always included).
+let sprintLaps = [0];
+let currentSprintIdx = 0;
+
+// Current round
+let roundPicks = [];
+let commitTimer = null;
+const COMMIT_DELAY = 2000;
+
+// Demo
+const DEMO = [
+  { bib: 5,  name: '林大福', score: 0, starred: true },
+  { bib: 12, name: '王小明', score: 0, starred: false },
+  { bib: 33, name: '陳志偉', score: 0, starred: true },
+  { bib: 8,  name: '李美玲', score: 0, starred: false },
+  { bib: 21, name: '張家豪', score: 0, starred: false },
+  { bib: 17, name: '黃雅琪', score: 0, starred: false },
+];
+athletes = DEMO.map(a => ({...a}));
+
+// ═══════════ Setup ═══════════
+
+function renderSetupList() {
+  document.getElementById('setup-list').innerHTML = athletes.map((a, i) => `
+    <div class="athlete-setup-card ${a.starred ? 'starred' : ''}">
+      <span class="star-toggle" onclick="toggleStar(${i})">${a.starred ? '★' : '☆'}</span>
+      <span class="bib">#${a.bib}</span>
+      <span class="name">${esc(a.name)}</span>
+      <button class="btn-delete" onclick="removeAthlete(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderSprintGrid() {
+  const grid = document.getElementById('sprint-laps-grid');
+  let html = '';
+  for (let i = 14; i >= 0; i--) {
+    const isFinal = i === 0;
+    const isActive = sprintLaps.includes(i);
+    let cls = 'lap-chip';
+    if (isFinal) cls += ' final';
+    else if (isActive) cls += ' active';
+    html += `<div class="${cls}" onclick="toggleSprintLap(${i})">${isFinal ? '🏁' : i}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function toggleSprintLap(lap) {
+  if (lap === 0) return; // always a sprint
+  const idx = sprintLaps.indexOf(lap);
+  if (idx >= 0) sprintLaps.splice(idx, 1);
+  else sprintLaps.push(lap);
+  sprintLaps.sort((a, b) => b - a);
+  renderSprintGrid();
+}
+
+function addAthlete() {
+  const bibEl = document.getElementById('inp-bib');
+  const nameEl = document.getElementById('inp-name');
+  const bib = parseInt(bibEl.value);
+  const name = nameEl.value.trim();
+  if (!bib || !name) return;
+  athletes.push({ bib, name, score: 0, starred: false });
+  bibEl.value = '';
+  nameEl.value = '';
+  bibEl.focus();
+  renderSetupList();
+}
+
+function removeAthlete(i) { athletes.splice(i, 1); renderSetupList(); }
+function toggleStar(i) { athletes[i].starred = !athletes[i].starred; renderSetupList(); }
+
+function startRace() {
+  if (athletes.length === 0) return;
+  sprintLaps.sort((a, b) => b - a);
+  currentSprintIdx = 0;
+  roundPicks = [];
+  history = [];
+  document.getElementById('setup-screen').classList.remove('active');
+  document.getElementById('race-screen').classList.add('active');
+  updateSprintBar();
+  sortAndRender();
+}
+
+function backToSetup() {
+  clearTimeout(commitTimer);
+  document.getElementById('race-screen').classList.remove('active');
+  document.getElementById('setup-screen').classList.add('active');
+  renderSetupList();
+  renderSprintGrid();
+}
+
+// ═══════════ Race Logic ═══════════
+
+function curLap() { return sprintLaps[currentSprintIdx] ?? null; }
+function isFinal() { return curLap() === 0; }
+function maxPicks() { return isFinal() ? 3 : 2; }
+function ptsForPick(idx) {
+  return isFinal() ? [3, 2, 1][idx] || 0 : [2, 1][idx] || 0;
+}
+
+function updateSprintBar() {
+  const lap = curLap();
+  const numEl = document.getElementById('lap-num');
+  const typeEl = document.getElementById('lap-type');
+  const infoEl = document.getElementById('sprint-info');
+
+  if (lap === null) {
+    numEl.textContent = '—';
+    typeEl.textContent = '比賽結束';
+    typeEl.className = 'lap-type normal';
+    infoEl.innerHTML = '所有得分圈已完成';
+    return;
+  }
+
+  numEl.textContent = lap === 0 ? '🏁' : lap;
+  if (isFinal()) {
+    typeEl.textContent = '最後一圈 (3/2/1)';
+    typeEl.className = 'lap-type final';
+  } else {
+    typeEl.textContent = '得分圈 (2/1)';
+    typeEl.className = 'lap-type normal';
+  }
+
+  const left = maxPicks() - roundPicks.length;
+  infoEl.innerHTML = left > 0
+    ? `還可選 <strong>${left}</strong> 人`
+    : `<strong>已選滿 ✓</strong>`;
+}
+
+function renderRoundPicks() {
+  const c = document.getElementById('round-picks');
+  if (roundPicks.length === 0) {
+    c.innerHTML = '<span class="round-picks-empty">👆 點選得分選手</span>';
+    return;
+  }
+  c.innerHTML = roundPicks.map(p => {
+    const a = athletes.find(x => x.bib === p.bib);
+    const cls = p.points === 3 ? 'pts3' : p.points === 2 ? 'pts2' : 'pts1';
+    return `<span class="round-pick-tag ${cls}">#${p.bib} ${esc(a?.name || '')} +${p.points}</span>`;
+  }).join('');
+}
+
+// ── Tap athlete ──
+function onTapAthlete(bib) {
+  if (roundPicks.length >= maxPicks()) return;
+  if (roundPicks.some(p => p.bib === bib)) return;
+
+  const pts = ptsForPick(roundPicks.length);
+  const a = athletes.find(x => x.bib === bib);
+  if (!a) return;
+
+  a.score += pts;
+  roundPicks.push({ bib, points: pts });
+
+  // Feedback
+  if (navigator.vibrate) navigator.vibrate(40);
+  const card = document.querySelector(`[data-bib="${bib}"]`);
+  if (card) {
+    card.classList.remove('tap-flash');
+    void card.offsetWidth;
+    card.classList.add('tap-flash');
+    card.classList.add('picked');
+    const scoreEl = card.querySelector('.score');
+    if (scoreEl) scoreEl.innerHTML = `${a.score}<span class="score-unit">分</span><span class="pending-badge">+${pts}</span>`;
+  }
+
+  updateSprintBar();
+  renderRoundPicks();
+  scheduleCommit();
+}
+
+function scheduleCommit() {
+  clearTimeout(commitTimer);
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  void bar.offsetWidth;
+  bar.style.transition = `width ${COMMIT_DELAY}ms linear`;
+  bar.style.width = '0%';
+
+  commitTimer = setTimeout(commitRound, COMMIT_DELAY);
+}
+
+function commitRound() {
+  if (roundPicks.length === 0) return;
+  history.push({ type: 'round', picks: [...roundPicks], sprintIdx: currentSprintIdx });
+  if (history.length > MAX_UNDO) history.shift();
+  document.getElementById('undo-count').textContent = history.length;
+
+  roundPicks = [];
+
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+
+  // Auto-advance to next sprint lap
+  if (currentSprintIdx < sprintLaps.length - 1) currentSprintIdx++;
+
+  renderRoundPicks();
+  updateSprintBar();
+  animatedSortAndRender();
+}
+
+function prevSprintLap() {
+  clearTimeout(commitTimer);
+  if (roundPicks.length > 0) commitRound();
+  if (currentSprintIdx > 0) currentSprintIdx--;
+  roundPicks = [];
+  updateSprintBar();
+  renderRoundPicks();
+  renderRaceCards({});
+}
+
+function nextSprintLap() {
+  clearTimeout(commitTimer);
+  if (roundPicks.length > 0) commitRound();
+  if (currentSprintIdx < sprintLaps.length - 1) currentSprintIdx++;
+  roundPicks = [];
+  updateSprintBar();
+  renderRoundPicks();
+  renderRaceCards({});
+}
+
+// ── Undo ──
+function undoLastPick() {
+  // If uncommitted picks exist, undo last pick
+  if (roundPicks.length > 0) {
+    clearTimeout(commitTimer);
+    const last = roundPicks.pop();
+    const a = athletes.find(x => x.bib === last.bib);
+    if (a) a.score -= last.points;
+
+    const card = document.querySelector(`[data-bib="${last.bib}"]`);
+    if (card) {
+      card.classList.remove('picked');
+      const se = card.querySelector('.score');
+      if (se) se.innerHTML = `${a.score}<span class="score-unit">分</span>`;
+    }
+
+    updateSprintBar();
+    renderRoundPicks();
+    if (roundPicks.length > 0) scheduleCommit();
+    else {
+      const bar = document.getElementById('commit-timer-bar');
+      bar.style.transition = 'none';
+      bar.style.width = '0%';
+    }
+    return;
+  }
+
+  // Undo last committed round
+  if (history.length === 0) return;
+  const h = history.pop();
+  if (h.type === 'round') {
+    for (const p of h.picks) {
+      const a = athletes.find(x => x.bib === p.bib);
+      if (a) a.score -= p.points;
+    }
+  }
+  document.getElementById('undo-count').textContent = history.length;
+  animatedSortAndRender();
+}
+
+// ── Render ──
+function animatedSortAndRender() {
+  const list = document.getElementById('race-list');
+  const cards = list.querySelectorAll('.athlete-card');
+
+  const oldPos = {};
+  cards.forEach(c => { oldPos[parseInt(c.dataset.bib)] = c.getBoundingClientRect(); });
+  const oldRank = {};
+  athletes.forEach((a, i) => { oldRank[a.bib] = i + 1; });
+
+  athletes.sort((a, b) => b.score - a.score);
+
+  const rc = {};
+  athletes.forEach((a, i) => { rc[a.bib] = (oldRank[a.bib] || i + 1) - (i + 1); });
+
+  renderRaceCards(rc);
+
+  // FLIP animate
+  list.querySelectorAll('.athlete-card').forEach(card => {
+    const bib = parseInt(card.dataset.bib);
+    const old = oldPos[bib];
+    if (!old) return;
+    const dy = old.top - card.getBoundingClientRect().top;
+    if (Math.abs(dy) < 2) return;
+    card.style.transition = 'none';
+    card.style.transform = `translateY(${dy}px)`;
+    void card.offsetWidth;
+    card.style.transition = 'transform 0.45s cubic-bezier(0.4,0,0.2,1)';
+    card.style.transform = 'translateY(0)';
+  });
+
+  setTimeout(() => {
+    list.querySelectorAll('.rank-change').forEach(el => { el.className = 'rank-change'; });
+  }, 2500);
+}
+
+function sortAndRender() {
+  athletes.sort((a, b) => b.score - a.score);
+  renderRaceCards({});
+}
+
+function renderRaceCards(rankChanges) {
+  const pickedBibs = new Set(roundPicks.map(p => p.bib));
+  document.getElementById('race-list').innerHTML = athletes.map((a, i) => {
+    const rank = i + 1;
+    let rc = '';
+    if (rank === 1) rc = 'top1';
+    else if (rank === 2) rc = 'top2';
+    else if (rank === 3) rc = 'top3';
+
+    const ch = rankChanges[a.bib] || 0;
+    let chCls = '', chTxt = '';
+    if (ch > 0) { chCls = 'up'; chTxt = `▲${ch}`; }
+    else if (ch < 0) { chCls = 'down'; chTxt = `▼${Math.abs(ch)}`; }
+
+    const picked = pickedBibs.has(a.bib);
+
+    return `
+    <div class="athlete-card ${a.starred ? 'starred' : ''} ${picked ? 'picked' : ''}"
+         data-bib="${a.bib}" onclick="onTapAthlete(${a.bib})">
+      <div class="rank ${rc}">${rank}</div>
+      <div class="rank-change ${chCls}">${chTxt}</div>
+      <div class="athlete-info">
+        <div class="top-line">
+          ${a.starred ? '<span class="star-icon">★</span>' : ''}
+          <span class="bib">#${a.bib}</span>
+          <span class="name">${esc(a.name)}</span>
+        </div>
+      </div>
+      <div class="score">${a.score}<span class="score-unit">分</span></div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Init
+renderSetupList();
+renderSprintGrid();
+</script>
+</body>
+</html>
