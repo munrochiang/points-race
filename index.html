@@ -170,6 +170,39 @@
   .athlete-setup-row .name { flex: 1; font-size: 16px; font-weight: 600; }
   .btn-delete { background: transparent; border: none; color: var(--text-dim); font-size: 17px; cursor: pointer; padding: 4px 8px; }
 
+  /* ── Distance option buttons ── */
+  .dist-options { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .dist-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .dist-btn.active {
+    border-color: var(--accent);
+    background: rgba(233,69,96,0.2);
+    color: #fff;
+  }
+  .dist-custom-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .dist-custom-row input {
+    width: 100px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .dist-warning { font-size: 12px; color: var(--accent); margin-top: 4px; }
+  .dist-info { font-size: 13px; color: var(--success); margin-top: 4px; font-weight: 600; }
+
   /* ── Sprint laps grid ── */
   .sprint-laps-grid { display: flex; flex-wrap: wrap; gap: 6px; }
   .lap-chip {
@@ -415,7 +448,7 @@ function addGroup() {
   const el = document.getElementById('inp-group-name');
   const name = el.value.trim();
   if (!name) return;
-  const g = { id: newId(), name, athletes: [], sprintLaps: [11,10,9,8,7,6,5,4,3,2,1,0], currentSprintIdx: 0, history: [] };
+  const g = { id: newId(), name, athletes: [], sprintLaps: [11,10,9,8,7,6,5,4,3,2,1,0], currentSprintIdx: 0, history: [], lapLength: 200, raceDistance: 3000 };
   groups.push(g);
   el.value = '';
   expandedGroupId = g.id; // auto-expand newly created group
@@ -446,7 +479,7 @@ function renderGroupsList() {
     <div class="group-card" id="gc-${g.id}">
       <div class="group-header" onclick="toggleGroup('${g.id}')">
         <span class="group-name">${esc(g.name)}</span>
-        <span class="group-meta">${g.athletes.length} 人</span>
+        <span class="group-meta">${g.athletes.length} 人｜${g.raceDistance}m</span>
         <button class="btn-group-delete" onclick="event.stopPropagation();deleteGroup('${g.id}')">✕</button>
         <span class="group-expand">${expanded ? '▲' : '▼'}</span>
       </div>
@@ -475,8 +508,42 @@ function renderGroupBody(g) {
     sprintHtml += `<div class="${cls}" onclick="toggleSprintLap('${g.id}', ${i})">${isFinal ? '🏁' : i}</div>`;
   }
 
+  const totalLaps = g.raceDistance / g.lapLength;
+  const lapOk = Number.isInteger(totalLaps);
+  const distOptions = [3000, 5000];
+  const isCustom = !distOptions.includes(g.raceDistance);
+
+  const distHtml = `
+    <div class="sub-title">比賽距離設定</div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">單圈長度</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="laplen-${g.id}" value="${g.lapLength}" inputmode="numeric"
+          style="width:80px;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:var(--bg);color:var(--text);font-size:15px;font-family:inherit"
+          onchange="setLapLength('${g.id}', this.value)">
+        <span style="font-size:14px;color:var(--text-dim)">m</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">質距</div>
+      <div class="dist-options">
+        ${distOptions.map(d => `<button class="dist-btn ${g.raceDistance === d && !isCustom ? 'active' : ''}" onclick="setRaceDistance('${g.id}', ${d})">${d}m</button>`).join('')}
+        <button class="dist-btn ${isCustom ? 'active' : ''}" onclick="setRaceDistance('${g.id}', 'custom')">其他</button>
+      </div>
+      ${isCustom ? `<div class="dist-custom-row">
+        <input type="number" id="custdist-${g.id}" value="${g.raceDistance}" inputmode="numeric" placeholder="輸入距離"
+          onchange="setCustomDistance('${g.id}', this.value)">
+        <span style="font-size:14px;color:var(--text-dim)">m</span>
+      </div>` : ''}
+      ${lapOk
+        ? `<div class="dist-info">✓ ${g.raceDistance}m ÷ ${g.lapLength}m = ${totalLaps} 圈</div>`
+        : `<div class="dist-warning">⚠️ ${g.raceDistance}m 不是 ${g.lapLength}m 的倍數，請重新輸入</div>`
+      }
+    </div>`;
+
   return `
   <div class="group-body">
+    ${distHtml}
     <div class="sub-title">選手名單</div>
     <div class="athlete-form">
       <input type="number" placeholder="號碼布" inputmode="numeric" style="max-width:85px" id="bib-${g.id}">
@@ -512,6 +579,37 @@ function removeAthlete(groupId, idx) {
 function toggleAthleteStar(groupId, idx) {
   const g = groups.find(x => x.id === groupId);
   if (g) { g.athletes[idx].starred = !g.athletes[idx].starred; renderGroupsList(); }
+}
+
+function setLapLength(groupId, val) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  const n = parseInt(val);
+  if (!n || n <= 0) return;
+  g.lapLength = n;
+  renderGroupsList();
+}
+
+function setRaceDistance(groupId, val) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  if (val === 'custom') {
+    // if currently a preset, switch to a blank custom value (0 triggers the input)
+    if ([3000, 5000].includes(g.raceDistance)) g.raceDistance = 0;
+    // else keep existing custom value
+  } else {
+    g.raceDistance = parseInt(val);
+  }
+  renderGroupsList();
+}
+
+function setCustomDistance(groupId, val) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  const n = parseInt(val);
+  if (!n || n <= 0) return;
+  g.raceDistance = n;
+  renderGroupsList();
 }
 
 function toggleSprintLap(groupId, lap) {
