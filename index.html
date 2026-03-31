@@ -385,10 +385,41 @@
   .score-unit { font-size: 12px; font-weight: 400; color: var(--text-dim); margin-left: 2px; }
   .score .pending-badge { font-size: 14px; font-weight: 700; color: var(--star-bg); margin-left: 4px; }
 
-  @media (min-width: 480px) {
-    .athlete-card { padding: 16px 20px; }
-    .athlete-info .bib { font-size: 26px; }
+  /* ── Instruction overlay ── */
+  #hint-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.65);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
   }
+  #hint-overlay.visible { display: flex; }
+  .hint-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    padding: 20px 20px 16px;
+    max-width: 360px;
+    width: 100%;
+    position: relative;
+  }
+  .hint-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+  .hint-box p { font-size: 14px; line-height: 1.65; color: var(--text-dim); margin: 0; }
+  .hint-box .hint-close {
+    position: absolute;
+    top: 10px; right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 6px;
+  }
+  .btn-hint { background: transparent; border: 1.5px solid rgba(255,255,255,0.2); color: var(--text-dim); padding: 8px 12px; font-size: 14px; }
 
   /* ══ Race Screen: no-scroll full-height layout ══ */
   #race-screen.active {
@@ -420,6 +451,15 @@
 </head>
 <body>
 
+<!-- Instruction overlay -->
+<div id="hint-overlay">
+  <div class="hint-box">
+    <button class="hint-close" onclick="dismissHint()">✕</button>
+    <h3>📋 操作說明</h3>
+    <p>每圈廣播得分號碼時，請依進線順序點選得分選手（兩號碼間隔勿超過兩秒）。<br><br>例如：選手 1001、1002 得分，請依序點選 1001 → 1002，點完後倒數兩秒，系統即自動跳到下一圈。</p>
+  </div>
+</div>
+
 <!-- ════════════ SETUP SCREEN ════════════ -->
 <div id="setup-screen" class="screen active">
   <div class="header">
@@ -445,6 +485,7 @@
   <div class="header">
     <h1>🏁</h1>
     <div class="header-actions">
+      <button class="btn btn-hint" onclick="showHint()">ℹ</button>
       <button class="btn btn-undo" onclick="undoLastPick()">
         ↩ 復原 <span class="undo-count" id="undo-count">0</span>
       </button>
@@ -460,7 +501,7 @@
     <span class="lap-label">得分圈</span>
     <span class="lap-num" id="lap-num">—</span>
     <span class="lap-type normal" id="lap-type">得分圈</span>
-    <span class="sprint-info" id="sprint-info">每圈廣播得分號碼時，請依進線順序點選得分選手</span>
+    <span class="sprint-info" id="sprint-info">依進線順序點選得分選手</span>
     <button class="btn btn-nav-lap" onclick="prevSprintLap()">◂ 上一圈</button>
     <button class="btn btn-nav-lap" onclick="nextSprintLap()">下一圈 ▸</button>
   </div>
@@ -468,7 +509,7 @@
   <div id="commit-timer-bar" class="commit-timer-bar"></div>
 
   <div id="round-picks" class="round-picks">
-    <span class="round-picks-empty">每圈廣播得分號碼時，請依進線順序點選得分選手（間隔勿超過兩秒）。例如：選手 1001、1002 得分，請依序點選 1001 → 1002（兩號碼間隔勿超過兩秒），點完後倒數計時兩秒，系統即自動跳到下一圈。</span>
+    <span class="round-picks-empty">👆 依進線順序點選得分選手</span>
   </div>
 
   <div id="race-list" class="race-list"></div>
@@ -723,6 +764,15 @@ function startRace() {
   renderGroupSelector();
   updateSprintBar();
   sortAndRender();
+  showHint();
+}
+
+function showHint() {
+  document.getElementById('hint-overlay').classList.add('visible');
+}
+
+function dismissHint() {
+  document.getElementById('hint-overlay').classList.remove('visible');
 }
 
 function backToSetup() {
@@ -784,7 +834,7 @@ function updateSprintBar() {
 function renderRoundPicks() {
   const c = document.getElementById('round-picks');
   if (roundPicks.length === 0) {
-    c.innerHTML = '<span class="round-picks-empty">每圈廣播得分號碼時，請依進線順序點選得分選手（間隔勿超過兩秒）。例如：選手 1001、1002 得分，請依序點選 1001 → 1002（兩號碼間隔勿超過兩秒），點完後倒數計時兩秒，系統即自動跳到下一圈。</span>';
+    c.innerHTML = '<span class="round-picks-empty">👆 依進線順序點選得分選手</span>';
     return;
   }
   const g = curGroup();
