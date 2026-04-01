@@ -896,7 +896,27 @@ function renderRoundPicks() {
 }
 
 function onTapAthlete(bib) {
-  if (roundPicks.length >= maxPicks()) return;
+  // If countdown is active (all picks filled), cancel it and restart with this tap
+  if (roundPicks.length >= maxPicks()) {
+    clearTimeout(commitTimer);
+    const bar = document.getElementById('commit-timer-bar');
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    // Revert all current picks
+    const g0 = curGroup();
+    for (const p of roundPicks) {
+      const a0 = g0.athletes.find(x => x.bib === p.bib);
+      if (a0) a0.score -= p.points;
+      const c0 = document.querySelector(`[data-bib="${p.bib}"]`);
+      if (c0) {
+        c0.classList.remove('picked');
+        const se = c0.querySelector('.score');
+        if (se) se.innerHTML = `${a0.score}<span class="score-unit">分</span>`;
+      }
+    }
+    roundPicks = [];
+    // fall through to register the new tap as pick[0]
+  }
   if (roundPicks.some(p => p.bib === bib)) return;
   // forwardStack items are already deducted from scores; just proceed with new picks
   const pts = ptsForPick(roundPicks.length);
