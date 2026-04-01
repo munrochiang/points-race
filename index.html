@@ -323,6 +323,7 @@
   .round-pick-tag.pts3 { background: rgba(233,69,96,0.25); color: var(--accent); }
   .round-pick-tag.pts2 { background: rgba(245,166,35,0.25); color: var(--star-bg); }
   .round-pick-tag.pts1 { background: rgba(0,184,148,0.25); color: var(--success); }
+  .round-pick-tag.stale { background: rgba(255,255,255,0.07); color: var(--text-dim); text-decoration: line-through; }
   .round-picks-empty { font-size: 13px; color: var(--text-dim); font-style: italic; }
 
   /* ── Race athlete cards ── */
@@ -526,6 +527,7 @@ let currentGroupId = null;
 let expandedGroupId = null;
 let selectedGroupId = null;
 let roundPicks = [];
+let prevRoundPicks = []; // picks from the last popped history entry (not yet deducted)
 let commitTimer = null;
 const COMMIT_DELAY = 2000;
 const MAX_UNDO = 20;
@@ -787,6 +789,7 @@ function startRace() {
   });
   currentGroupId = selectedGroupId;
   roundPicks = [];
+  prevRoundPicks = [];
   clearTimeout(commitTimer);
   document.getElementById('setup-screen').classList.remove('active');
   document.getElementById('race-screen').classList.add('active');
@@ -826,6 +829,7 @@ function switchGroup(id) {
   if (roundPicks.length > 0) commitRound(false); // commit silently without auto-advance
   currentGroupId = id;
   roundPicks = [];
+  prevRoundPicks = [];
   const bar = document.getElementById('commit-timer-bar');
   bar.style.transition = 'none';
   bar.style.width = '0%';
@@ -862,21 +866,36 @@ function updateSprintBar() {
 
 function renderRoundPicks() {
   const c = document.getElementById('round-picks');
-  if (roundPicks.length === 0) {
+  if (roundPicks.length === 0 && prevRoundPicks.length === 0) {
     c.innerHTML = '<span class="round-picks-empty">👆 依進線順序點選得分選手</span>';
     return;
   }
   const g = curGroup();
-  c.innerHTML = roundPicks.map(p => {
+  // Show stale (prev lap) picks with strikethrough, then current picks
+  const staleTags = prevRoundPicks.map(p => {
+    const a = g.athletes.find(x => x.bib === p.bib);
+    return `<span class="round-pick-tag stale">#${p.bib} ${esc(a?.name || '')} +${p.points}</span>`;
+  }).join('');
+  const currentTags = roundPicks.map(p => {
     const a = g.athletes.find(x => x.bib === p.bib);
     const cls = p.points === 3 ? 'pts3' : p.points === 2 ? 'pts2' : 'pts1';
     return `<span class="round-pick-tag ${cls}">#${p.bib} ${esc(a?.name || '')} +${p.points}</span>`;
   }).join('');
+  c.innerHTML = staleTags + currentTags;
 }
 
 function onTapAthlete(bib) {
   if (roundPicks.length >= maxPicks()) return;
   if (roundPicks.some(p => p.bib === bib)) return;
+  // First tap after going back a lap: deduct the stale picks now
+  if (prevRoundPicks.length > 0) {
+    const g2 = curGroup();
+    for (const p of prevRoundPicks) {
+      const a = g2.athletes.find(x => x.bib === p.bib);
+      if (a) a.score -= p.points;
+    }
+    prevRoundPicks = [];
+  }
   const pts = ptsForPick(roundPicks.length);
   const g = curGroup();
   const a = g.athletes.find(x => x.bib === bib);
@@ -933,21 +952,20 @@ function prevSprintLap() {
   bar.style.width = '0%';
   const g = curGroup();
   if (!g) return;
-  // Revert any uncommitted picks first
+  // Revert any uncommitted picks immediately
   for (const p of roundPicks) {
     const a = g.athletes.find(x => x.bib === p.bib);
     if (a) a.score -= p.points;
   }
   roundPicks = [];
-  // Also revert the last committed round if there is one
+  // Also discard any stale picks from a previous prev-lap press
+  prevRoundPicks = [];
+  // Pop the last committed round — store picks as stale (don't deduct yet)
   if (g.history.length > 0) {
     const h = g.history.pop();
     if (h.type === 'round') {
-      for (const p of h.picks) {
-        const a = g.athletes.find(x => x.bib === p.bib);
-        if (a) a.score -= p.points;
-      }
-      g.currentSprintIdx = h.sprintIdx; // restore the lap index from that round
+      prevRoundPicks = [...h.picks];
+      g.currentSprintIdx = h.sprintIdx;
     }
   } else if (g.currentSprintIdx > 0) {
     g.currentSprintIdx--;
@@ -961,6 +979,15 @@ function prevSprintLap() {
 function nextSprintLap() {
   clearTimeout(commitTimer);
   if (roundPicks.length > 0) commitRound(false);
+  // If user skips forward without confirming prev-lap stale picks, deduct them now
+  if (prevRoundPicks.length > 0) {
+    const g2 = curGroup();
+    for (const p of prevRoundPicks) {
+      const a = g2.athletes.find(x => x.bib === p.bib);
+      if (a) a.score -= p.points;
+    }
+    prevRoundPicks = [];
+  }
   const g = curGroup();
   if (g && g.currentSprintIdx < g.sprintLaps.length - 1) g.currentSprintIdx++;
   roundPicks = [];
