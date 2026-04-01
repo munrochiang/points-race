@@ -542,6 +542,28 @@ function defaultSprintLaps(totalLaps) {
   return laps;
 }
 
+// ═══════════ Persistence ═══════════
+const STORAGE_KEY = 'rc-log-groups-v1';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ groups, idSeq, selectedGroupId }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!Array.isArray(s.groups) || s.groups.length === 0) return false;
+    groups = s.groups;
+    idSeq = s.idSeq || idSeq;
+    selectedGroupId = s.selectedGroupId || groups[0].id;
+    return true;
+  } catch(e) { return false; }
+}
+
 // ═══════════ Setup ═══════════
 
 function addGroup() {
@@ -683,16 +705,17 @@ function addAthlete(groupId) {
   nameEl.value = '';
   bibEl.focus();
   renderGroupsList();
+  saveState();
 }
 
 function removeAthlete(groupId, idx) {
   const g = groups.find(x => x.id === groupId);
-  if (g) { g.athletes.splice(idx, 1); renderGroupsList(); }
+  if (g) { g.athletes.splice(idx, 1); renderGroupsList(); saveState(); }
 }
 
 function toggleAthleteStar(groupId, idx) {
   const g = groups.find(x => x.id === groupId);
-  if (g) { g.athletes[idx].starred = !g.athletes[idx].starred; renderGroupsList(); }
+  if (g) { g.athletes[idx].starred = !g.athletes[idx].starred; renderGroupsList(); saveState(); }
 }
 
 function setLapLength(groupId, val) {
@@ -704,6 +727,7 @@ function setLapLength(groupId, val) {
   const total = g.raceDistance / g.lapLength;
   if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
   renderGroupsList();
+  saveState();
 }
 
 function setRaceDistance(groupId, val) {
@@ -717,6 +741,7 @@ function setRaceDistance(groupId, val) {
     if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
   }
   renderGroupsList();
+  saveState();
 }
 
 function setCustomDistance(groupId, val) {
@@ -728,6 +753,7 @@ function setCustomDistance(groupId, val) {
   const total = g.raceDistance / g.lapLength;
   if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
   renderGroupsList();
+  saveState();
 }
 
 function toggleSprintLap(groupId, lap) {
@@ -739,6 +765,7 @@ function toggleSprintLap(groupId, lap) {
   else g.sprintLaps.push(lap);
   g.sprintLaps.sort((a, b) => b - a);
   renderGroupsList();
+  saveState();
 }
 
 function updateStartBar() {
@@ -1032,8 +1059,9 @@ function renderRaceCards(rankChanges) {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// Init — pre-populate two sample groups
-(function seedSampleGroups() {
+// Init — load from localStorage, or seed sample groups on first visit
+if (!loadState()) {
+  (function seedSampleGroups() {
   const lapLength = 200, raceDistance = 3000;
   const totalLaps = raceDistance / lapLength;
   const sprintLaps = defaultSprintLaps(totalLaps);
@@ -1096,7 +1124,9 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
   groups.push(g1, g2);
   selectedGroupId = g1.id;
   expandedGroupId = g1.id;
-})();
+  saveState();
+  })(); // end seedSampleGroups
+} // end if (!loadState())
 
 renderGroupsList();
 updateStartBar();
