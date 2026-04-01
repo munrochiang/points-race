@@ -837,7 +837,6 @@ function switchGroup(id) {
   renderRoundPicks();
   updateSprintBar();
   sortAndRender();
-  document.getElementById('undo-count').textContent = curGroup().history.length;
 }
 
 function curLap() {
@@ -1021,7 +1020,6 @@ function prevSprintLap() {
   } else if (g.currentSprintIdx > 0) {
     g.currentSprintIdx--;
   }
-  document.getElementById('undo-count').textContent = g.history.length;
   updateSprintBar();
   renderRoundPicks();
   animatedSortAndRender();
@@ -1089,7 +1087,6 @@ function undoLastPick() {
     // revert sprint index
     g.currentSprintIdx = h.sprintIdx;
   }
-  document.getElementById('undo-count').textContent = g.history.length;
   updateSprintBar();
   animatedSortAndRender();
 }
