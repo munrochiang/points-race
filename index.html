@@ -967,7 +967,7 @@ function animatedSortAndRender() {
   if (!g) return;
   const oldRank = {};
   g.athletes.forEach((a, i) => { oldRank[a.bib] = i + 1; });
-  g.athletes.sort((a, b) => b.score - a.score);
+  g.athletes.sort((a, b) => b.score - a.score || parseInt(a.bib) - parseInt(b.bib));
   const rc = {};
   g.athletes.forEach((a, i) => { rc[a.bib] = (oldRank[a.bib] || i+1) - (i+1); });
   renderRaceCards(rc);
@@ -990,8 +990,9 @@ function animatedSortAndRender() {
 
 function sortAndRender() {
   const g = curGroup();
-  if (g) g.athletes.sort((a, b) => b.score - a.score);
+  if (g) g.athletes.sort((a, b) => b.score - a.score || parseInt(a.bib) - parseInt(b.bib));
   renderRaceCards({});
+}
 }
 
 function renderRaceCards(rankChanges) {
@@ -1002,9 +1003,11 @@ function renderRaceCards(rankChanges) {
   const isDense = athleteCount > 8;
   raceList.classList.toggle('dense', isDense);
   if (isDense) raceList.style.setProperty('--row-count', Math.ceil(athleteCount / 2));
-  raceList.innerHTML = (g ? g.athletes : []).map((a, i) => {
-    const rank = i + 1;
-    let rc = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+  raceList.innerHTML = (g ? g.athletes : []).map((a, i, arr) => {
+    // Tie-aware rank: find first index with same score
+    const rank = i === 0 ? 1 : (arr[i].score === arr[i-1].score ? null : i + 1);
+    const displayRank = rank !== null ? rank : (function(){ let r = i; while(r > 0 && arr[r].score === arr[r-1].score) r--; return r+1; })();
+    let rc = displayRank === 1 ? 'top1' : displayRank === 2 ? 'top2' : displayRank === 3 ? 'top3' : '';
     const ch = rankChanges[a.bib] || 0;
     let chCls = '', chTxt = '';
     if (ch > 0) { chCls = 'up'; chTxt = `▲${ch}`; }
@@ -1012,7 +1015,7 @@ function renderRaceCards(rankChanges) {
     return `
     <div class="athlete-card ${a.starred ? 'starred' : ''} ${pickedBibs.has(a.bib) ? 'picked' : ''}"
          data-bib="${a.bib}" onclick="onTapAthlete('${a.bib}')">
-      <div class="rank ${rc}">${rank}</div>
+      <div class="rank ${rc}">${displayRank}</div>
       <div class="rank-change ${chCls}">${chTxt}</div>
       <div class="athlete-info">
         <div class="top-line">
@@ -1037,12 +1040,12 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
   const g1 = { id: newId(), name: '國小三年級 3,000 公尺計分賽 男子組', lapLength, raceDistance, sprintLaps: [...sprintLaps], currentSprintIdx: 0, history: [],
     athletes: [
       {bib:'216',  name:'林靖',   score:0, starred:false},
-      {bib:'992',  name:'劉品勳', score:0, starred:false},
+      {bib:'992',  name:'劉品勳', score:0, starred:true},
       {bib:'225',  name:'陳永璿', score:0, starred:false},
       {bib:'1342', name:'劉丞皓', score:0, starred:false},
       {bib:'703',  name:'楊朔宇', score:0, starred:false},
       {bib:'1170', name:'郭晏呈', score:0, starred:false},
-      {bib:'988',  name:'張梓歆', score:0, starred:false},
+      {bib:'988',  name:'張梓歆', score:0, starred:true},
       {bib:'502',  name:'蔡皓宇', score:0, starred:false},
       {bib:'1092', name:'魏宸國', score:0, starred:false},
       {bib:'1133', name:'陳昱宸', score:0, starred:false},
@@ -1065,9 +1068,9 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
   const g2 = { id: newId(), name: '國小四年級 3,000 公尺計分賽 女子組', lapLength, raceDistance, sprintLaps: [...sprintLaps], currentSprintIdx: 0, history: [],
     athletes: [
       {bib:'1141', name:'温苡甯', score:0, starred:false},
-      {bib:'1015', name:'張臣媛', score:0, starred:false},
+      {bib:'1015', name:'張臣媛', score:0, starred:true},
       {bib:'1206', name:'林采璇', score:0, starred:false},
-      {bib:'1002', name:'蕭語彤', score:0, starred:false},
+      {bib:'1002', name:'蕭語彤', score:0, starred:true},
       {bib:'16',   name:'甘智頤', score:0, starred:false},
       {bib:'1024', name:'吳宥臻', score:0, starred:false},
       {bib:'166',  name:'卓若嵐', score:0, starred:false},
