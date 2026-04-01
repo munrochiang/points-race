@@ -895,7 +895,8 @@ function onTapAthlete(bib) {
   }
   updateSprintBar();
   renderRoundPicks();
-  scheduleCommit();
+  // Only start the countdown after ALL required picks are entered
+  if (roundPicks.length >= maxPicks()) scheduleCommit();
 }
 
 function scheduleCommit() {
@@ -927,13 +928,34 @@ function commitRound(autoAdvance) {
 
 function prevSprintLap() {
   clearTimeout(commitTimer);
-  if (roundPicks.length > 0) commitRound(false);
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
   const g = curGroup();
-  if (g && g.currentSprintIdx > 0) g.currentSprintIdx--;
+  if (!g) return;
+  // Revert any uncommitted picks first
+  for (const p of roundPicks) {
+    const a = g.athletes.find(x => x.bib === p.bib);
+    if (a) a.score -= p.points;
+  }
   roundPicks = [];
+  // Also revert the last committed round if there is one
+  if (g.history.length > 0) {
+    const h = g.history.pop();
+    if (h.type === 'round') {
+      for (const p of h.picks) {
+        const a = g.athletes.find(x => x.bib === p.bib);
+        if (a) a.score -= p.points;
+      }
+      g.currentSprintIdx = h.sprintIdx; // restore the lap index from that round
+    }
+  } else if (g.currentSprintIdx > 0) {
+    g.currentSprintIdx--;
+  }
+  document.getElementById('undo-count').textContent = g.history.length;
   updateSprintBar();
   renderRoundPicks();
-  renderRaceCards({});
+  animatedSortAndRender();
 }
 
 function nextSprintLap() {
@@ -962,7 +984,8 @@ function undoLastPick() {
     }
     updateSprintBar();
     renderRoundPicks();
-    if (roundPicks.length > 0) scheduleCommit();
+    // Only restart countdown if all required picks are still present
+    if (roundPicks.length >= maxPicks()) scheduleCommit();
     else {
       const bar = document.getElementById('commit-timer-bar');
       bar.style.transition = 'none';
