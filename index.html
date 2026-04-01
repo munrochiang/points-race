@@ -957,7 +957,6 @@ function commitRound(autoAdvance) {
   const g = curGroup();
   g.history.push({ type: 'round', picks: [...roundPicks], sprintIdx: g.currentSprintIdx });
   if (g.history.length > MAX_UNDO) g.history.shift();
-  document.getElementById('undo-count').textContent = g.history.length;
   roundPicks = [];
   const bar = document.getElementById('commit-timer-bar');
   bar.style.transition = 'none';
