@@ -426,7 +426,53 @@
   }
   .btn-hint { background: transparent; border: 1.5px solid rgba(255,255,255,0.2); color: var(--text-dim); padding: 8px 12px; font-size: 14px; }
 
-  /* ══ Race Screen: viewport-constrained, only race-list scrolls ══ */
+  /* ══ Results Screen ══ */
+  #results-screen.active {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .results-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  .results-title { font-size: 15px; font-weight: 700; flex: 1; }
+  .results-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+  }
+  .result-row.starred { border-color: var(--star-bg); background: linear-gradient(135deg, rgba(245,166,35,0.12), var(--surface)); }
+  .result-rank { font-size: 22px; font-weight: 800; min-width: 36px; text-align: center; }
+  .result-rank.top1 { color: #ffd700; font-size: 28px; }
+  .result-rank.top2 { color: #c0c0c0; font-size: 24px; }
+  .result-rank.top3 { color: #cd7f32; font-size: 22px; }
+  .result-info { flex: 1; min-width: 0; }
+  .result-bib { font-size: 20px; font-weight: 800; }
+  .result-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); }
+  .result-score { font-size: 26px; font-weight: 800; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .result-score-unit { font-size: 12px; color: var(--text-dim); margin-left: 2px; }
   #race-screen.active {
     display: flex;
     flex-direction: column;
@@ -524,7 +570,15 @@
   <div id="race-list" class="race-list"></div>
 </div>
 
-<script>
+<!-- ════════════ RESULTS SCREEN ════════════ -->
+<div id="results-screen" class="screen">
+  <div class="results-bar">
+    <span class="results-title">🏆 總成績</span>
+    <button class="btn btn-nav-lap" onclick="backToRace()">&#9668; 上一圈</button>
+    <button class="btn btn-outline" onclick="backToSetup()">⚙️</button>
+  </div>
+  <div id="results-list" class="results-list"></div>
+</div>
 // ═══════════ State ═══════════
 // Group: { id, name, athletes: Athlete[], sprintLaps: number[], currentSprintIdx: number, history: Action[] }
 // Athlete: { bib, name, score, starred }
@@ -815,7 +869,44 @@ function dismissHint() {
   document.getElementById('hint-overlay').classList.remove('visible');
 }
 
-function backToSetup() {
+function showResults() {
+  document.getElementById('race-screen').classList.remove('active');
+  document.getElementById('results-screen').classList.add('active');
+  renderResults();
+}
+
+function renderResults() {
+  const g = curGroup();
+  if (!g) return;
+  const sorted = [...g.athletes].sort((a, b) => b.score - a.score || parseInt(a.bib) - parseInt(b.bib));
+  const list = document.getElementById('results-list');
+  list.innerHTML = sorted.map((a, i, arr) => {
+    let displayRank = i + 1;
+    if (i > 0 && arr[i].score === arr[i-1].score) {
+      let r = i; while (r > 0 && arr[r].score === arr[r-1].score) r--; displayRank = r + 1;
+    }
+    const rc = displayRank === 1 ? 'top1' : displayRank === 2 ? 'top2' : displayRank === 3 ? 'top3' : '';
+    return `<div class="result-row ${a.starred ? 'starred' : ''}">
+      <div class="result-rank ${rc}">${displayRank === 1 ? '🥇' : displayRank === 2 ? '🥈' : displayRank === 3 ? '🥉' : displayRank}</div>
+      <div class="result-info">
+        <div class="result-bib">${esc(a.bib)}</div>
+        <div class="result-name">${esc(a.name)}</div>
+      </div>
+      <div class="result-score">${a.score}<span class="result-score-unit">分</span></div>
+    </div>`;
+  }).join('');
+}
+
+function backToRace() {
+  document.getElementById('results-screen').classList.remove('active');
+  document.getElementById('race-screen').classList.add('active');
+  renderRoundPicks();
+  updateSprintBar();
+  sortAndRender();
+  // Immediately go back one lap so user can correct the final lap
+  prevSprintLap();
+}
+
   clearTimeout(commitTimer);
   document.getElementById('race-screen').classList.remove('active');
   document.getElementById('setup-screen').classList.add('active');
@@ -972,11 +1063,18 @@ function commitRound(autoAdvance) {
     const committedIdx = g.currentSprintIdx;
     const progress = g.progressSprintIdx ?? 0;
     const atProgress = committedIdx >= progress;
+    const wasFinal = committedIdx === 0; // sprintIdx 0 = last lap
     drainForwardStack(g, committedIdx);
     if (atProgress) {
       g.progressSprintIdx = Math.min(progress + 1, g.sprintLaps.length - 1);
     }
     g.currentSprintIdx = g.progressSprintIdx ?? committedIdx;
+    if (wasFinal && atProgress) {
+      // All laps done — show results
+      saveState();
+      showResults();
+      return;
+    }
   }
   renderRoundPicks();
   updateSprintBar();
