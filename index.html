@@ -425,13 +425,17 @@
   }
   .btn-hint { background: transparent; border: 1.5px solid rgba(255,255,255,0.2); color: var(--text-dim); padding: 8px 12px; font-size: 14px; }
 
-  /* ══ Race Screen: no-scroll full-height layout ══ */
+  /* ══ Race Screen: full-height layout with safe-area fallback ══ */
   #race-screen.active {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    /* Use dvh so browser chrome is already excluded; add env() bottom inset for notch/home-bar */
+    min-height: calc(100dvh - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - env(safe-area-inset-bottom, 0px));
+    overflow: auto;
+    /* padding-bottom reserves space even when env() is 0 (e.g. Android Chrome with auto-hiding bar) */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 40px);
+    box-sizing: border-box;
   }
   /* Compact chrome elements inside race screen */
   #race-screen .header { padding: 6px 16px; }
