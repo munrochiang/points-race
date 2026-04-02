@@ -987,7 +987,13 @@ function commitRound(autoAdvance) {
     if (atProgress) {
       g.progressSprintIdx = Math.min(progress + 1, g.sprintLaps.length - 1);
     }
-    g.currentSprintIdx = g.progressSprintIdx ?? committedIdx;
+    // If we just committed the final lap (sprintLaps[committedIdx] === 0),
+    // advance past the array end so curLap() returns null → 比賽結束
+    if (g.sprintLaps[committedIdx] === 0) {
+      g.currentSprintIdx = g.sprintLaps.length; // out-of-bounds → curLap() = null
+    } else {
+      g.currentSprintIdx = g.progressSprintIdx ?? committedIdx;
+    }
   }
   renderRoundPicks();
   updateSprintBar();
