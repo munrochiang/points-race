@@ -901,7 +901,8 @@ function renderRoundPicks() {
 }
 
 function onTapAthlete(bib) {
-  // If countdown is active (all picks filled), cancel it and restart with this tap
+  // Race finished — ignore taps
+  if (curLap() === null) return;
   if (roundPicks.length >= maxPicks()) {
     clearTimeout(commitTimer);
     const bar = document.getElementById('commit-timer-bar');
