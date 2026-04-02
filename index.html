@@ -453,8 +453,8 @@
   .race-list .athlete-card { padding: 2px 8px; gap: 6px; border-radius: 7px; align-items: center; overflow: hidden; }
   .race-list .athlete-info { display: flex; flex-direction: row; align-items: center; gap: 6px; min-width: 0; flex: 1; flex-wrap: nowrap; overflow: hidden; }
   .race-list .athlete-info .bib-line { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-  /* name-line: min-width of 3em guarantees 3 Chinese chars before truncation */
-  .race-list .athlete-info .name-line { min-width: 3em; overflow: hidden; }
+  /* name-line: min-width of 2em guarantees 2 Chinese chars before truncation */
+  .race-list .athlete-info .name-line { min-width: 2em; overflow: hidden; }
   .race-list .athlete-info .bib { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 11cqw), 44px); font-weight: 800; background: none; padding: 0; border-radius: 0; letter-spacing: 0.5px; }
   .race-list .athlete-card.starred .star-icon { font-size: clamp(9px, min(calc(40cqh / var(--row-count, 13)), 7cqw), 24px); }
   .race-list .athlete-info .name { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 11cqw), 44px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-weight: 600; }
@@ -464,9 +464,10 @@
   .race-list.dense .rank { font-size: clamp(10px, min(calc(45cqh / var(--row-count, 13)), 5.5cqw), 28px); min-width: clamp(14px, min(calc(45cqh / var(--row-count, 13)), 5.5cqw), 28px); }
   .race-list.dense .rank.top1 { font-size: clamp(11px, min(calc(50cqh / var(--row-count, 13)), 6cqw), 30px); }
   .race-list.dense .rank.top2, .race-list.dense .rank.top3 { font-size: clamp(10px, min(calc(47cqh / var(--row-count, 13)), 5.5cqw), 29px); }
-  .race-list.dense .athlete-info .bib { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 5cqw), 44px); }
+  .race-list.dense .athlete-info .bib { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 4.2cqw), 44px); }
   .race-list.dense .athlete-card.starred .star-icon { font-size: clamp(9px, min(calc(40cqh / var(--row-count, 13)), 3.5cqw), 24px); }
-  .race-list.dense .athlete-info .name { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 5cqw), 44px); }
+  .race-list.dense .athlete-info .name { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 4.2cqw), 44px); }
+  .race-list.dense .score { font-size: clamp(14px, min(calc(70cqh / var(--row-count, 13)), 4.8cqw), 46px); }
   .race-list.dense .score { font-size: clamp(14px, min(calc(70cqh / var(--row-count, 13)), 5.5cqw), 46px); }
 </style>
   <script data-goatcounter="https://munrochiang.goatcounter.com/count"
@@ -961,6 +962,16 @@ function scheduleCommit() {
 function commitRound(autoAdvance) {
   if (roundPicks.length === 0) return;
   const g = curGroup();
+  // If there is already a committed history entry for this exact lap, deduct it first
+  // (happens when re-scoring the final lap which cannot advance further)
+  const existingIdx = g.history.findLastIndex(h => h.type === 'round' && h.sprintIdx === g.currentSprintIdx);
+  if (existingIdx !== -1) {
+    const old = g.history.splice(existingIdx, 1)[0];
+    for (const p of old.picks) {
+      const a = g.athletes.find(x => x.bib === p.bib);
+      if (a) a.score -= p.points;
+    }
+  }
   g.history.push({ type: 'round', picks: [...roundPicks], sprintIdx: g.currentSprintIdx });
   if (g.history.length > MAX_UNDO) g.history.shift();
   roundPicks = [];
