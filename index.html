@@ -442,15 +442,15 @@
   #race-screen .sprint-bar .sprint-info { display: none; }
   #race-screen .round-picks { padding: 4px 12px; min-height: 30px; }
   /* Compact athlete cards when inside the race grid */
-  .race-list .athlete-card { padding: 4px 8px; gap: 5px; border-radius: 7px; }
-  .race-list .rank { font-size: 11px; min-width: 16px; }
-  .race-list .rank.top1 { font-size: 13px; }
-  .race-list .rank.top2, .race-list .rank.top3 { font-size: 12px; }
+  .race-list .athlete-card { padding: 2px 8px; gap: 5px; border-radius: 7px; }
+  .race-list .rank { font-size: clamp(10px, calc(38cqh / var(--row-count, 13)), 22px); min-width: clamp(14px, calc(38cqh / var(--row-count, 13)), 22px); }
+  .race-list .rank.top1 { font-size: clamp(11px, calc(42cqh / var(--row-count, 13)), 24px); }
+  .race-list .rank.top2, .race-list .rank.top3 { font-size: clamp(10px, calc(40cqh / var(--row-count, 13)), 22px); }
   .race-list .rank-change { display: none; }
-  .race-list .athlete-info .bib { font-size: clamp(11px, calc(22cqh / var(--row-count, 10)), 26px); padding: 2px 5px; border-radius: 5px; }
-  .race-list .athlete-info .name { font-size: clamp(11px, calc(22cqh / var(--row-count, 10)), 26px); }
-  .race-list .score { font-size: clamp(13px, calc(26cqh / var(--row-count, 10)), 30px); min-width: 26px; }
-  .race-list .score-unit { font-size: 10px; }
+  .race-list .athlete-info .bib { font-size: clamp(11px, calc(55cqh / var(--row-count, 13)), 30px); padding: 2px 5px; border-radius: 5px; }
+  .race-list .athlete-info .name { font-size: clamp(11px, calc(55cqh / var(--row-count, 13)), 30px); }
+  .race-list .score { font-size: clamp(13px, calc(65cqh / var(--row-count, 13)), 36px); min-width: 26px; }
+  .race-list .score-unit { font-size: clamp(8px, calc(28cqh / var(--row-count, 13)), 14px); }
 </style>
   <script data-goatcounter="https://munrochiang.goatcounter.com/count"
           async src="//gc.zgo.at/count.js"></script>
