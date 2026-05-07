@@ -1191,68 +1191,228 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 // Init — load from localStorage, or seed sample groups on first visit
 if (!loadState()) {
   (function seedSampleGroups() {
-  const lapLength = 200, raceDistance = 3000;
-  const totalLaps = raceDistance / lapLength;
-  const sprintLaps = defaultSprintLaps(totalLaps);
+  function makeSampleGroup({ name, lapLength = 200, raceDistance = 3000, athletes }) {
+    const totalLaps = raceDistance / lapLength;
+    return {
+      id: newId(),
+      name,
+      lapLength,
+      raceDistance,
+      sprintLaps: Number.isInteger(totalLaps) ? defaultSprintLaps(totalLaps) : [],
+      currentSprintIdx: 0,
+      history: [],
+      athletes
+    };
+  }
 
-  const g1 = { id: newId(), name: '國小三年級 3,000 公尺計分賽 男子組', lapLength, raceDistance, sprintLaps: [...sprintLaps], currentSprintIdx: 0, history: [],
-    athletes: [
-      {bib:'216',  name:'林靖',   score:0, starred:false},
-      {bib:'992',  name:'劉品勳', score:0, starred:true},
-      {bib:'225',  name:'陳永璿', score:0, starred:false},
-      {bib:'1342', name:'劉丞皓', score:0, starred:false},
-      {bib:'703',  name:'楊朔宇', score:0, starred:false},
-      {bib:'1170', name:'郭晏呈', score:0, starred:false},
-      {bib:'988',  name:'張梓歆', score:0, starred:true},
-      {bib:'502',  name:'蔡皓宇', score:0, starred:false},
-      {bib:'1092', name:'魏宸國', score:0, starred:false},
-      {bib:'1133', name:'陳昱宸', score:0, starred:false},
-      {bib:'1278', name:'王聖博', score:0, starred:false},
-      {bib:'4',    name:'高偊軒', score:0, starred:false},
-      {bib:'954',  name:'曾宣皓', score:0, starred:false},
-      {bib:'1294', name:'李星橙', score:0, starred:false},
-      {bib:'778',  name:'潘宥凱', score:0, starred:false},
-      {bib:'1265', name:'賈勁竑', score:0, starred:false},
-      {bib:'429',  name:'莊凱序', score:0, starred:false},
-      {bib:'786',  name:'陳奕昇', score:0, starred:false},
-      {bib:'161',  name:'張恩郡', score:0, starred:false},
-      {bib:'303',  name:'張子晨', score:0, starred:false},
-      {bib:'1228', name:'莊昀杰', score:0, starred:false},
-      {bib:'385',  name:'陳御恩', score:0, starred:false},
-      {bib:'639',  name:'陳豐田', score:0, starred:false},
-    ]
-  };
+  function parseAthletes(raw) {
+    return raw.trim().split('\n').map(line => {
+      const [, bib, name] = line.trim().match(/^(\d+)(.+)$/);
+      return { bib, name, score: 0, starred: false };
+    });
+  }
 
-  const g2 = { id: newId(), name: '國小四年級 3,000 公尺計分賽 女子組', lapLength, raceDistance, sprintLaps: [...sprintLaps], currentSprintIdx: 0, history: [],
-    athletes: [
-      {bib:'1141', name:'温苡甯', score:0, starred:false},
-      {bib:'1015', name:'張臣媛', score:0, starred:true},
-      {bib:'1206', name:'林采璇', score:0, starred:false},
-      {bib:'1002', name:'蕭語彤', score:0, starred:true},
-      {bib:'16',   name:'甘智頤', score:0, starred:false},
-      {bib:'1024', name:'吳宥臻', score:0, starred:true},
-      {bib:'166',  name:'卓若嵐', score:0, starred:false},
-      {bib:'735',  name:'廖若喬', score:0, starred:false},
-      {bib:'1275', name:'江品慧', score:0, starred:false},
-      {bib:'1222', name:'蕭艾蓉', score:0, starred:false},
-      {bib:'498',  name:'黃允樂', score:0, starred:false},
-      {bib:'1033', name:'曾芸菲', score:0, starred:true},
-      {bib:'1291', name:'王星霓', score:0, starred:false},
-      {bib:'1274', name:'詹智茵', score:0, starred:false},
-      {bib:'1340', name:'李艾庭', score:0, starred:false},
-      {bib:'31',   name:'陳姵靜', score:0, starred:false},
-      {bib:'22',   name:'陳亮宇', score:0, starred:false},
-      {bib:'1259', name:'盧妡禹', score:0, starred:false},
-      {bib:'1115', name:'康舒庭', score:0, starred:false},
-      {bib:'1049', name:'陳語棠', score:0, starred:false},
-      {bib:'1129', name:'游臻穻', score:0, starred:false},
-      {bib:'1272', name:'洪昀霏', score:0, starred:false},
-    ]
-  };
+  const sampleGroups = [
+    {
+      name: '選手A一年級女子組 2000公尺計分賽',
+      raceDistance: 2000,
+      athletes: parseAthletes(`
+0413周祉諾
+0653賴偲甯
+0752蕭語扉
+0753藍曼之
+0803楊庭瑀
+      `)
+    },
+    {
+      name: '選手A一年級男子組 2000公尺計分賽',
+      raceDistance: 2000,
+      athletes: parseAthletes(`
+0414周祉勳
+0749張嘉霖
+0750蔣仲凱
+      `)
+    },
+    {
+      name: '選手A二年級男子組 2000公尺計分賽',
+      raceDistance: 2000,
+      athletes: parseAthletes(`
+0302陳宥憲
+0523洪睿陽
+0524林以儒
+0748陳霆恩
+0978吳祈睿
+0979邱允程
+1067陳啟睿
+      `)
+    },
+    {
+      name: '選手A三年級女子組 3000公尺計分賽',
+      raceDistance: 3000,
+      athletes: parseAthletes(`
+0015林亮彤
+0392張珈妤
+0639林祐妍
+0743藍敏之
+0744林亮妤
+0805楊子嫻
+0981徐秭霈
+      `)
+    },
+    {
+      name: '選手A三年級男子組 3000公尺計分賽',
+      raceDistance: 3000,
+      athletes: parseAthletes(`
+0017鄭元成
+0045張芯輔
+0046張宸睿
+0260張庭彪
+0388劉丞皓
+0636游浩翔
+0641蘇恩叡
+0738劉品勳
+0739張梓歆
+1259莊昀杰
+      `)
+    },
+    {
+      name: '選手A四年級女子組 3000公尺計分賽',
+      raceDistance: 3000,
+      athletes: parseAthletes(`
+0534林采璇
+0730張臣媛
+0731蕭語彤
+0733洪愷彤
+0804楊芷寧
+0807陳若安
+0984薛宇晴
+1026周家聿
+1151卓若嵐
+      `)
+    },
+    {
+      name: '選手A四年級男子組 3000公尺計分賽',
+      raceDistance: 3000,
+      athletes: parseAthletes(`
+0048余曜宇
+0049曹宸睿
+0057王子嘉
+0058陳彥安
+0521莊岳橙
+0729蔣至凱
+0986蔡宸昊
+0987邱允碩
+0988蔡杰廷
+      `)
+    },
+    {
+      name: '選手A五年級女子組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0085陳苡晴
+0526林妤晅
+0726張晏寧
+0727郭雅清
+0728陳怡如
+0901吳宣妤
+0991盧柔瑾
+      `)
+    },
+    {
+      name: '選手A五年級男子組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0053陳軍赫
+0146連子熙
+0412薛丞佑
+0518李揚
+0723楊坤曜
+0808陳梓平
+0904萬宇軒
+0992葉于杰
+0993蘇柏昇
+      `)
+    },
+    {
+      name: '選手A六年級女子組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0019謝 琦
+0021潘樂恩
+0090張芯妮
+0091趙品卉
+0092李羽宸
+0719李佑芯
+0720吳絜熙
+      `)
+    },
+    {
+      name: '選手A六年級男子組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0052陳宥礽
+0516顏辰宇
+0517林以駱
+0621游之承
+0714曾偉翔
+0715張臣鈞
+0994楊予實
+      `)
+    },
+    {
+      name: '選手A國中女子組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0007章智涵
+0094張家緁
+0096謝立晴
+0097洪晞媛
+0159李語喬
+0310黃莉靜
+0315李竟慈
+0411洪梓瑞
+0513林梓希
+0514劉珈妘
+0535徐辜可昕
+0706彭詩雅
+0707廖宸瑜
+0708侯緒芯
+0813吳承安
+0818周昀熹
+0995楊予曦
+0996鍾雨彤
+      `)
+    },
+    {
+      name: '選手A國中男子組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0067丁泰鈞
+0068張顥騰
+0380鄭永晟
+0615羅煜筌
+0617盧宥辰
+0618湯祈睿
+0648石川卓明
+0699曾衍皓
+0700施品亦
+0701尹浩丞
+0702李佑宸
+0997楊皓治
+0998張本緯
+0999陳研愷
+1001林亞辰
+1002廖育漳
+1003許承宇
+1004尤子熏
+1005邱泓銘
+      `)
+    }
+  ];
 
-  groups.push(g1, g2);
-  selectedGroupId = g1.id;
-  expandedGroupId = g1.id;
+  groups.push(...sampleGroups.map(makeSampleGroup));
+  selectedGroupId = groups[0].id;
+  expandedGroupId = groups[0].id;
   saveState();
   })(); // end seedSampleGroups
 } // end if (!loadState())
