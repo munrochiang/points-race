@@ -1213,10 +1213,11 @@ if (!loadState()) {
     };
   }
 
-  function parseAthletes(raw) {
+  function parseAthletes(raw, starredBibs = []) {
+    const starredSet = new Set(starredBibs);
     return raw.trim().split('\n').map(line => {
       const [, bib, name] = line.trim().match(/^(\d+)(.+)$/);
-      return { bib, name, score: 0, starred: false };
+      return { bib, name, score: 0, starred: starredSet.has(bib) };
     });
   }
 
@@ -1230,7 +1231,7 @@ if (!loadState()) {
 0752蕭語扉
 0753藍曼之
 0803楊庭瑀
-      `)
+      `, ['0752', '0753'])
     },
     {
       name: '選手A一年級男子組 2000公尺計分賽',
