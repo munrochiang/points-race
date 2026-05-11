@@ -714,9 +714,9 @@ function addAthlete(groupId) {
   if (!g) return;
   const bibEl = document.getElementById(`bib-${groupId}`);
   const nameEl = document.getElementById(`name-${groupId}`);
-  const bib = parseInt(bibEl.value);
+  const bib = bibEl.value.trim();
   const name = nameEl.value.trim();
-  if (!bib || !name) return;
+  if (!bib || isNaN(bib) || !name) return;
   g.athletes.push({ bib, name, score: 0, starred: false });
   bibEl.value = '';
   nameEl.value = '';
@@ -1213,29 +1213,83 @@ if (!loadState()) {
     };
   }
 
-  const sampleStarredBibs = new Set([
-    '0752', '0753', '0749', '0750',
-    '0748', '0743', '0744', '0738', '0739', '0730', '0731', '0733',
-    '0729', '0726', '0727', '0728', '0723', '0719', '0720', '0714',
-    '0715', '0706', '0707', '0708', '0699', '0700', '0701', '0702'
-  ]);
-
   function parseAthletes(raw) {
     return raw.trim().split('\n').map(line => {
-      const [, bib, name] = line.trim().match(/^(\d+)(.+)$/);
-      return { bib, name, score: 0, starred: sampleStarredBibs.has(bib) };
+      const trimmed = line.trim();
+      const starred = trimmed.startsWith('*');
+      const data = starred ? trimmed.slice(1) : trimmed;
+      const [, bib, name] = data.match(/^(\d+)(.+)$/);
+      return { bib, name, score: 0, starred };
     });
   }
 
   const sampleGroups = [
+    {
+      name: '王者國小高年級組 5000公尺計分賽',
+      raceDistance: 5000,
+      athletes: parseAthletes(`
+0714曾偉翔
+0715張臣鈞
+1300李樂
+1301李誾揆
+1302劉士祺
+0719李佑芯
+0720吳絜熙
+1303余品彤
+1304蕭均羽
+0723楊坤曜
+1305張梓鈞
+1306江曜宇
+0726張晏寧
+0727郭雅清
+0728陳怡如
+      `)
+    },
+    {
+      name: '王者國小中年級組 3000公尺計分賽',
+      raceDistance: 3000,
+      athletes: parseAthletes(`
+0729蔣至凱
+0730張臣媛
+0731蕭語彤
+1307莊知柚
+0733洪愷彤
+1308吳宥臻
+1309曾芸菲
+1310余昀芸
+1311廖宸歆
+0738劉品勳
+0739張梓歆
+1312許佑齊
+1313游朝富
+1314黃楷傑
+0743藍敏之
+0744林亮妤
+1315黃佳芬
+      `)
+    },
+    {
+      name: '王者國小低年級組 2000公尺計分賽',
+      raceDistance: 2000,
+      athletes: parseAthletes(`
+1316廖子琪
+0748陳霆恩
+0749張嘉霖
+0750蔣仲凱
+1317田宇宸
+0752蕭語扉
+0753藍曼之
+1318黃筠喬
+      `)
+    },
     {
       name: '選手A一年級女子組 2000公尺計分賽',
       raceDistance: 2000,
       athletes: parseAthletes(`
 0413周祉諾
 0653賴偲甯
-0752蕭語扉
-0753藍曼之
+*0752蕭語扉
+*0753藍曼之
 0803楊庭瑀
       `)
     },
@@ -1244,8 +1298,8 @@ if (!loadState()) {
       raceDistance: 2000,
       athletes: parseAthletes(`
 0414周祉勳
-0749張嘉霖
-0750蔣仲凱
+*0749張嘉霖
+*0750蔣仲凱
       `)
     },
     {
@@ -1255,7 +1309,7 @@ if (!loadState()) {
 0302陳宥憲
 0523洪睿陽
 0524林以儒
-0748陳霆恩
+*0748陳霆恩
 0978吳祈睿
 0979邱允程
 1067陳啟睿
@@ -1268,8 +1322,8 @@ if (!loadState()) {
 0015林亮彤
 0392張珈妤
 0639林祐妍
-0743藍敏之
-0744林亮妤
+*0743藍敏之
+*0744林亮妤
 0805楊子嫻
 0981徐秭霈
       `)
@@ -1285,8 +1339,8 @@ if (!loadState()) {
 0388劉丞皓
 0636游浩翔
 0641蘇恩叡
-0738劉品勳
-0739張梓歆
+*0738劉品勳
+*0739張梓歆
 1259莊昀杰
       `)
     },
@@ -1295,9 +1349,9 @@ if (!loadState()) {
       raceDistance: 3000,
       athletes: parseAthletes(`
 0534林采璇
-0730張臣媛
-0731蕭語彤
-0733洪愷彤
+*0730張臣媛
+*0731蕭語彤
+*0733洪愷彤
 0804楊芷寧
 0807陳若安
 0984薛宇晴
@@ -1314,7 +1368,7 @@ if (!loadState()) {
 0057王子嘉
 0058陳彥安
 0521莊岳橙
-0729蔣至凱
+*0729蔣至凱
 0986蔡宸昊
 0987邱允碩
 0988蔡杰廷
@@ -1326,9 +1380,9 @@ if (!loadState()) {
       athletes: parseAthletes(`
 0085陳苡晴
 0526林妤晅
-0726張晏寧
-0727郭雅清
-0728陳怡如
+*0726張晏寧
+*0727郭雅清
+*0728陳怡如
 0901吳宣妤
 0991盧柔瑾
       `)
@@ -1341,7 +1395,7 @@ if (!loadState()) {
 0146連子熙
 0412薛丞佑
 0518李揚
-0723楊坤曜
+*0723楊坤曜
 0808陳梓平
 0904萬宇軒
 0992葉于杰
@@ -1357,8 +1411,8 @@ if (!loadState()) {
 0090張芯妮
 0091趙品卉
 0092李羽宸
-0719李佑芯
-0720吳絜熙
+*0719李佑芯
+*0720吳絜熙
       `)
     },
     {
@@ -1369,8 +1423,8 @@ if (!loadState()) {
 0516顏辰宇
 0517林以駱
 0621游之承
-0714曾偉翔
-0715張臣鈞
+*0714曾偉翔
+*0715張臣鈞
 0994楊予實
       `)
     },
@@ -1389,9 +1443,9 @@ if (!loadState()) {
 0513林梓希
 0514劉珈妘
 0535徐辜可昕
-0706彭詩雅
-0707廖宸瑜
-0708侯緒芯
+*0706彭詩雅
+*0707廖宸瑜
+*0708侯緒芯
 0813吳承安
 0818周昀熹
 0995楊予曦
@@ -1409,10 +1463,10 @@ if (!loadState()) {
 0617盧宥辰
 0618湯祈睿
 0648石川卓明
-0699曾衍皓
-0700施品亦
-0701尹浩丞
-0702李佑宸
+*0699曾衍皓
+*0700施品亦
+*0701尹浩丞
+*0702李佑宸
 0997楊皓治
 0998張本緯
 0999陳研愷
