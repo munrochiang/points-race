@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<!-- 本頁含 66 位兒童選手的姓名／號碼布／代表單位（來源：協會公開的出場序 PDF）。
+     雖屬公開資訊，仍不希望被搜尋引擎索引成持久連結。 -->
+<meta name="robots" content="noindex, nofollow">
+<title>計分賽即時建議</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --star-bg: #f5a623;
+    --text: #eee;
+    --text-dim: #8899aa;
+    --success: #00b894;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ── Common Buttons ── */
+  .btn {
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.95); opacity: 0.85; }
+  .btn-primary { background: var(--accent); color: #fff; padding: 12px 24px; font-size: 16px; }
+  .btn-outline { background: transparent; color: var(--text); border: 1.5px solid rgba(255,255,255,0.2); padding: 8px 14px; font-size: 14px; }
+  .btn-green { background: var(--success); color: #fff; padding: 12px 20px; font-size: 15px; white-space: nowrap; }
+  .btn-reset { background: transparent; color: var(--accent); border: 1.5px solid rgba(233,69,96,0.6); padding: 12px 16px; font-size: 15px; white-space: nowrap; }
+  .btn-undo {
+    background: var(--surface);
+    color: var(--text);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    padding: 8px 14px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-undo .undo-count {
+    background: rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 2px 7px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ══════════ Setup Screen ══════════ */
+
+  .setup-section {
+    margin: 12px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+  }
+  .setup-section h2 { font-size: 15px; color: var(--text-dim); margin-bottom: 12px; }
+
+  .setup-form { display: flex; gap: 8px; flex-wrap: wrap; }
+  .setup-form .inp-full { flex: 1 1 100%; }
+  .setup-form input {
+    flex: 1;
+    min-width: 100px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    font-family: inherit;
+  }
+  .setup-form input::placeholder { color: var(--text-dim); }
+
+  /* ── Group cards (accordion) ── */
+  .groups-list { padding: 0 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+
+  .group-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .group-card.selected { border-color: var(--primary); }
+  .group-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s; }
+  .group-card.selected .group-radio { border-color: var(--primary); background: var(--primary); }
+  .group-card.selected .group-radio::after { content: ''; display: block; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+  .group-header:active { opacity: 0.8; }
+  .group-name { flex: 1; font-size: 16px; font-weight: 700; }
+  .group-meta { font-size: 13px; color: var(--text-dim); }
+  .group-expand { font-size: 12px; color: var(--text-dim); }
+  .btn-group-delete { background: transparent; border: none; color: var(--text-dim); font-size: 17px; cursor: pointer; padding: 4px 6px; }
+
+  .group-body { padding: 0 16px 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+
+  .group-body .sub-title { font-size: 13px; color: var(--text-dim); margin: 12px 0 8px; }
+
+  .athlete-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .athlete-form input {
+    flex: 1;
+    min-width: 70px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .athlete-form input::placeholder { color: var(--text-dim); }
+  .btn-add-sm { background: var(--success); color: #fff; padding: 10px 16px; font-size: 14px; white-space: nowrap; }
+
+  .athlete-setup-list { display: flex; flex-direction: column; gap: 6px; }
+  .athlete-setup-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+  }
+  .athlete-setup-row.starred {
+    border-color: var(--star-bg);
+    background: rgba(245,166,35,0.07);
+  }
+  .star-toggle { font-size: 20px; cursor: pointer; flex-shrink: 0; }
+  .athlete-setup-row .bib {
+    background: var(--card);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 20px;
+    min-width: 46px;
+    text-align: center;
+  }
+  .athlete-setup-row .name { flex: 1; font-size: 16px; font-weight: 600; }
+  .btn-delete { background: transparent; border: none; color: var(--text-dim); font-size: 17px; cursor: pointer; padding: 4px 8px; }
+
+  /* ── Distance option buttons ── */
+  .dist-options { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .dist-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .dist-btn.active {
+    border-color: var(--accent);
+    background: rgba(233,69,96,0.2);
+    color: #fff;
+  }
+  .dist-custom-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .dist-custom-row input {
+    width: 100px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .dist-warning { font-size: 12px; color: var(--accent); margin-top: 4px; }
+  .dist-info { font-size: 13px; color: var(--success); margin-top: 4px; font-weight: 600; }
+
+  /* ── Sprint laps grid ── */
+  .sprint-laps-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lap-chip {
+    width: 44px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .lap-chip.active { border-color: var(--accent); background: rgba(233,69,96,0.2); color: #fff; }
+  .lap-chip.final { border-color: var(--star-bg); background: rgba(245,166,35,0.2); color: var(--star-bg); pointer-events: none; }
+
+  /* ── Start bar ── */
+  .start-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    text-align: center;
+  }
+  .start-bar .btn-primary { width: 100%; padding: 16px; font-size: 18px; border-radius: var(--radius); }
+
+  /* ══════════ Race Screen ══════════ */
+
+  /* ── Group selector ── */
+  .group-selector-bar {
+    padding: 8px 12px;
+    background: var(--card);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .group-selector-bar select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%238899aa'%3E%3Cpath d='M0 0l6 8 6-8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    cursor: pointer;
+  }
+
+  /* ── Sprint bar ── */
+  .sprint-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-wrap: wrap;
+  }
+  .sprint-bar .lap-label { font-size: 13px; color: var(--text-dim); }
+  .sprint-bar .lap-num { font-size: 22px; font-weight: 800; }
+  .sprint-bar .lap-type {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 6px;
+  }
+  .lap-type.normal { background: rgba(233,69,96,0.2); color: var(--accent); }
+  .lap-type.final  { background: rgba(245,166,35,0.25); color: var(--star-bg); }
+  .sprint-bar .sprint-info { flex: 1; text-align: right; font-size: 13px; color: var(--text-dim); }
+  .sprint-bar .sprint-info strong { color: var(--text); }
+  .btn-nav-lap {
+    background: var(--card);
+    color: var(--text);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Commit timer ── */
+  .commit-timer-bar { height: 3px; background: var(--success); width: 0; }
+
+  /* ── Round picks display ── */
+  .round-picks {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    min-height: 38px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .round-pick-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .round-pick-tag.pts3 { background: rgba(233,69,96,0.25); color: var(--accent); }
+  .round-pick-tag.pts2 { background: rgba(245,166,35,0.25); color: var(--star-bg); }
+  .round-pick-tag.pts1 { background: rgba(0,184,148,0.25); color: var(--success); }
+  .round-pick-tag.stale { background: rgba(255,255,255,0.07); color: var(--text-dim); text-decoration: line-through; }
+  .round-picks-empty { font-size: 13px; color: var(--text-dim); font-style: italic; }
+
+  /* ── Race athlete cards ── */
+  .race-list {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-rows: 1fr;
+    gap: 3px;
+    padding: 3px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    container-type: size;
+    container-name: race-list;
+  }
+  .race-list.dense {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: unset;
+    grid-template-rows: repeat(var(--row-count, 12), 1fr);
+    grid-auto-flow: column;
+  }
+
+  .athlete-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1), border-color 0.2s, background 0.2s, opacity 0.2s;
+  }
+  .athlete-card:active { transform: scale(0.97); }
+  .athlete-card.starred { border-color: var(--star-bg); background: linear-gradient(135deg, rgba(245,166,35,0.12), var(--surface)); }
+  .athlete-card.picked { opacity: 0.4; pointer-events: none; }
+  .race-list.countdown-running .athlete-card.picked { pointer-events: auto; cursor: pointer; }
+
+  @keyframes card-tap {
+    0%   { box-shadow: inset 0 0 0 0 rgba(255,255,255,0.4); }
+    50%  { box-shadow: inset 0 0 24px 4px rgba(255,255,255,0.2); }
+    100% { box-shadow: inset 0 0 0 0 rgba(255,255,255,0); }
+  }
+  .athlete-card.tap-flash { animation: card-tap 0.35s ease-out; }
+
+  .rank { font-size: 14px; font-weight: 700; color: var(--text-dim); min-width: 24px; text-align: center; }
+  .rank.top1 { color: #ffd700; font-size: 18px; }
+  .rank.top2 { color: #c0c0c0; font-size: 16px; }
+  .rank.top3 { color: #cd7f32; font-size: 16px; }
+
+  .rank-change { font-size: 11px; font-weight: 700; min-width: 24px; text-align: center; opacity: 0; transition: opacity 0.3s; }
+  .rank-change.up   { color: var(--success); opacity: 1; }
+  .rank-change.down { color: var(--accent); opacity: 1; }
+
+  .athlete-info { flex: 1; min-width: 0; }
+  .athlete-info .top-line { display: flex; align-items: center; gap: 8px; }
+  .athlete-info .bib { background: var(--card); padding: 5px 10px; border-radius: 6px; font-weight: 800; font-size: 22px; letter-spacing: 1px; }
+  .athlete-card.starred .star-icon { color: var(--star-bg); font-size: 16px; }
+  .athlete-info .name { font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .score { font-size: 24px; font-weight: 800; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .score-unit { font-size: 12px; font-weight: 400; color: var(--text-dim); margin-left: 2px; }
+  .score .pending-badge { font-size: 14px; font-weight: 700; color: var(--star-bg); margin-left: 4px; }
+
+  /* ── Instruction overlay ── */
+  #hint-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.65);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #hint-overlay.visible { display: flex; }
+  .hint-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    padding: 20px 20px 16px;
+    max-width: 360px;
+    width: 100%;
+    position: relative;
+  }
+  .hint-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+  .hint-box p { font-size: 14px; line-height: 1.65; color: var(--text-dim); margin: 0; }
+  .hint-box .hint-close {
+    position: absolute;
+    top: 10px; right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 6px;
+  }
+  .btn-hint { background: transparent; border: 1.5px solid rgba(255,255,255,0.2); color: var(--text-dim); padding: 8px 12px; font-size: 14px; }
+
+  /* ══ Race Screen: viewport-constrained, only race-list scrolls ══ */
+  #race-screen.active {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    /* iOS home-bar / Android notch safe area */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  /* Compact chrome elements inside race screen */
+  #race-screen .header { padding: 6px 16px; }
+  #race-screen .group-selector-bar { padding: 4px 8px; }
+  #race-screen .group-selector-bar select { padding: 6px 12px; font-size: 14px; }
+  #race-screen .sprint-bar { padding: 5px 8px; flex-wrap: nowrap; }
+  #race-screen .sprint-bar .lap-num { font-size: 18px; }
+  #race-screen .sprint-bar .sprint-info { display: none; }
+  #race-screen .round-picks { padding: 4px 12px; min-height: 30px; }
+  /* Compact athlete cards when inside the race grid */
+  .race-list .rank { font-size: clamp(10px, min(calc(45cqh / var(--row-count, 13)), 11cqw), 28px); min-width: clamp(14px, min(calc(45cqh / var(--row-count, 13)), 11cqw), 28px); line-height: 1; }
+  .race-list .rank.top1 { font-size: clamp(11px, min(calc(50cqh / var(--row-count, 13)), 12cqw), 30px); }
+  .race-list .rank.top2, .race-list .rank.top3 { font-size: clamp(10px, min(calc(47cqh / var(--row-count, 13)), 11cqw), 29px); }
+  .race-list .rank-change { display: none; }
+  /* single-line athlete-info: bib then name */
+  .race-list .athlete-card { padding: 2px 8px; gap: 6px; border-radius: 7px; align-items: center; overflow: hidden; }
+  .race-list .athlete-info { display: flex; flex-direction: row; align-items: center; gap: 6px; min-width: 0; flex: 1; flex-wrap: nowrap; overflow: hidden; }
+  .race-list .athlete-info .bib-line { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  /* name-line: min-width of 2em guarantees 2 Chinese chars before truncation */
+  .race-list .athlete-info .name-line { min-width: 2em; overflow: hidden; }
+  .race-list .athlete-info .bib { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 11cqw), 44px); font-weight: 800; background: none; padding: 0; border-radius: 0; letter-spacing: 0.5px; }
+  .race-list .athlete-card.starred .star-icon { font-size: clamp(9px, min(calc(40cqh / var(--row-count, 13)), 7cqw), 24px); }
+  .race-list .athlete-info .name { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 11cqw), 44px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-weight: 600; }
+  .race-list .score { font-size: clamp(14px, min(calc(70cqh / var(--row-count, 13)), 12cqw), 46px); min-width: 26px; flex-shrink: 0; line-height: 1; }
+  .race-list .score-unit { font-size: clamp(8px, min(calc(28cqh / var(--row-count, 13)), 5cqw), 16px); }
+  /* Dense (2-col): halve the cqw coefficient since each card is ~half the container width */
+  .race-list.dense .rank { font-size: clamp(10px, min(calc(45cqh / var(--row-count, 13)), 5.5cqw), 28px); min-width: clamp(14px, min(calc(45cqh / var(--row-count, 13)), 5.5cqw), 28px); }
+  .race-list.dense .rank.top1 { font-size: clamp(11px, min(calc(50cqh / var(--row-count, 13)), 6cqw), 30px); }
+  .race-list.dense .rank.top2, .race-list.dense .rank.top3 { font-size: clamp(10px, min(calc(47cqh / var(--row-count, 13)), 5.5cqw), 29px); }
+  .race-list.dense .athlete-info .bib { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 4.2cqw), 44px); }
+  .race-list.dense .athlete-card.starred .star-icon { font-size: clamp(9px, min(calc(40cqh / var(--row-count, 13)), 3.5cqw), 24px); }
+  .race-list.dense .athlete-info .name { font-size: clamp(13px, min(calc(65cqh / var(--row-count, 13)), 4.2cqw), 44px); }
+  .race-list.dense .score { font-size: clamp(14px, min(calc(70cqh / var(--row-count, 13)), 4.8cqw), 46px); }
+  .race-list.dense .score { font-size: clamp(14px, min(calc(70cqh / var(--row-count, 13)), 5.5cqw), 46px); }
+
+  /* ════════ 建議面板（rule-based，離線） ════════ */
+  .advice { background: var(--surface); border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 7px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .alarm { border-radius: 8px; padding: 7px 10px; font-size: 15px; font-weight: 800; line-height: 1.3; }
+  .alarm.red   { background: rgba(233,69,96,0.22); color: #ff9aa8; border: 1.5px solid var(--accent); }
+  .alarm.amber { background: rgba(245,166,35,0.18); color: #ffd08a; border: 1.5px solid var(--star-bg); }
+  .alarm.green { background: rgba(0,184,148,0.15); color: #7ce0c6; border: 1.5px solid var(--success); }
+  .alarm.dim   { background: var(--card); color: var(--text-dim); border: 1.5px solid rgba(255,255,255,0.12); }
+  .advice-stats { display: flex; gap: 5px; flex-wrap: wrap; }
+  .stat { background: var(--card); border-radius: 7px; padding: 3px 8px; font-size: 11px;
+          color: var(--text-dim); white-space: nowrap; line-height: 1.5; }
+  .stat b { color: var(--text); font-size: 14px; font-weight: 800; }
+  .stat.warn { border: 1px solid rgba(245,166,35,0.5); } .stat.warn b { color: #ffd08a; }
+  .stat.hot  { border: 1px solid rgba(233,69,96,0.5); }  .stat.hot b  { color: #ff9aa8; }
+  /* 一圈的輸入區：① 得分號碼 ② 至凱位置 */
+  .entry { background: var(--surface); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 7px 10px 9px; }
+  .entry-step { margin-top: 6px; }
+  .entry-step:first-child { margin-top: 0; }
+  .step-hd { display: flex; align-items: center; gap: 6px; font-size: 11.5px;
+             color: var(--text-dim); font-weight: 700; margin-bottom: 4px; }
+  .step-no { display: inline-flex; align-items: center; justify-content: center;
+             width: 17px; height: 17px; border-radius: 50%; font-size: 11px;
+             background: var(--card); color: var(--text); font-weight: 800; flex: 0 0 auto; }
+  .step-hd.done .step-no { background: var(--success); color: #fff; }
+  .step-hd.done { color: var(--success); }
+  .step-hd .carried-tag { margin-left: auto; font-size: 10.5px; color: var(--star-bg); font-weight: 700; }
+  .arrow-down { text-align: center; font-size: 10.5px; color: var(--text-dim);
+                letter-spacing: 3px; padding: 3px 0 0; background: var(--surface); }
+  .pos-btns { display: flex; flex-direction: column; gap: 5px; }
+  .pos-row { display: flex; gap: 5px; }
+  .star-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .chip { background: var(--card); color: var(--text-dim); border: 1.5px solid transparent;
+          border-radius: 99px; padding: 4px 9px; font-size: 12px; font-weight: 700;
+          font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .chip.on { background: var(--star-bg); border-color: var(--star-bg); color: #3a2a00; }
+  .chip-n { font-size: 10.5px; opacity: 0.8; }
+  .chip-p { font-size: 10.5px; font-weight: 800; padding: 0 3px; border-radius: 3px;
+            background: rgba(255,255,255,0.15); }
+  .chip.on .chip-p { background: rgba(0,0,0,0.18); }
+  .chip-p.none { opacity: 0.5; }
+  .pos-btn { flex: 1; background: var(--card); color: var(--text-dim); border: 1.5px solid transparent;
+             border-radius: 7px; padding: 8px 4px; font-size: 13px; font-weight: 700;
+             font-family: inherit; cursor: pointer; }
+  .pos-btn:active { transform: scale(0.96); }
+  .pos-btn.on[data-p="front"]   { background: var(--success); border-color: var(--success); color: #fff; }
+  .pos-btn.on[data-p="back"]    { background: var(--star-bg); border-color: var(--star-bg); color: #3a2a00; }
+  .pos-btn.on[data-p="dropped"] { background: var(--accent);  border-color: var(--accent);  color: #fff; }
+  /* 沿用上一圈：只描邊、不填色，跟「這圈剛確認」明確區分 */
+  .pos-btn.carried { background: transparent; color: var(--text-dim); border-style: dashed; }
+  .pos-btn.carried[data-p="front"]   { border-color: var(--success); }
+  .pos-btn.carried[data-p="back"]    { border-color: var(--star-bg); }
+  .pos-btn.carried[data-p="dropped"] { border-color: var(--accent); }
+  /* 三層：指令（大）／狀態（小）／方法（中） */
+  .order { font-size: 21px; font-weight: 900; line-height: 1.25; letter-spacing: -0.3px; }
+  .order .ico { font-size: 19px; margin-right: 5px; }
+  .reason { font-size: 12px; opacity: 0.8; margin-top: 5px; line-height: 1.4; font-weight: 600; }
+  .reason .sep { opacity: 0.45; margin: 0 5px; }
+  .how { font-size: 13.5px; color: var(--text); line-height: 1.45; margin-top: 7px;
+         padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .how b { color: var(--star-bg); }
+  /* 觀測到的訊號（優先佇列，只顯示最上面幾條） */
+  .obs { margin-top: 7px; }
+  .obs-hd { font-size: 10.5px; color: var(--text-dim); font-weight: 800; letter-spacing: 1px;
+            margin-bottom: 4px; }
+  .obs-row { font-size: 12.5px; line-height: 1.45; font-weight: 600; margin: 3px 0;
+             padding-left: 16px; position: relative; }
+  .obs-row::before { content: '●'; position: absolute; left: 2px; font-size: 9px; top: 2px; }
+  .obs-row.s10, .obs-row.s9, .obs-row.s8 { color: #ff9aa8; }
+  .obs-row.s7, .obs-row.s6 { color: #ffd08a; }
+  .obs-row.s5 { color: #7ce0c6; }
+  .pace { font-size: 11px; color: var(--text-dim); margin-top: 5px; font-weight: 600; }
+  .pace b { color: var(--text); }
+  /* 歷史資料庫查無紀錄 → 排序位置沒有依據，淡淡標一下 */
+  .nodata { opacity: 0.35; font-weight: 700; margin-left: 3px; font-size: 0.75em; }
+  .btn-unheard { background: transparent; color: var(--star-bg);
+                 border: 1.5px solid rgba(245,166,35,0.6); padding: 8px 9px; font-size: 13px; }
+</style>
+  <script data-goatcounter="https://munrochiang.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<!-- Instruction overlay -->
+<div id="hint-overlay">
+  <div class="hint-box">
+    <button class="hint-close" onclick="dismissHint()">✕</button>
+    <h3>📋 操作說明</h3>
+    <p><b>每一圈兩個輸入：</b></p>
+    <p><b>1 得分號碼</b> —— 廣播念到時，<b>依進線順序</b>點選。例：1001、1002 得分 → 點 1001 再點 1002。點完倒數兩秒自動跳下一圈；按錯可在兩秒內重點，或跳轉後按「上一圈」重選。</p>
+    <p><b>2 選手位置</b> —— 點一下星號選手這圈在集團的哪裡。<b>沒點就沿用上一圈</b>（會標示「沿用上一圈」）。這是建議能不能給的關鍵：同樣的分數，在前段和已掉隊要做的事完全相反。</p>
+    <p><b>⚠️ 沒聽清楚</b> —— 沒聽到號碼時按它，不要亂猜。系統會記成「這圈有 2 個名額被不知道是誰的人拿走」，建議改用區間計算，只會偏保守不會偏樂觀。<b>亂猜比空白危險。</b></p>
+    <p>兩個輸入完成後，下方「▼ ▼ ▼ 建議」會立刻更新。</p>
+  </div>
+</div>
+
+<!-- ════════════ SETUP SCREEN ════════════ -->
+<div id="setup-screen" class="screen active">
+  <div class="header">
+    <h2>📁 新增組別</h2>
+    <div class="setup-form">
+      <input id="inp-group-name" type="text" placeholder="例：國小三年級男子組 3000m 計分賽" class="inp-full">
+      <button class="btn btn-green" onclick="addGroup()">＋ 新增組別</button>
+      <button class="btn btn-reset" onclick="resetToSampleData()">重置預設清單</button>
+    </div>
+  </div>
+
+  <div id="groups-list" class="groups-list"></div>
+
+  <div style="height: 80px"></div>
+  <div class="start-bar">
+    <div id="start-group-label" style="font-size:13px;color:var(--text-dim);margin-bottom:6px;text-align:center;"></div>
+    <button class="btn btn-primary" onclick="startRace()">▶ 開始比賽</button>
+  </div>
+</div>
+
+<!-- ════════════ RACE SCREEN ════════════ -->
+<div id="race-screen" class="screen">
+
+  <div class="sprint-bar" id="sprint-bar">
+    <span class="lap-label">得分圈</span>
+    <span class="lap-num" id="lap-num">—</span>
+    <span class="lap-type normal" id="lap-type">得分圈</span>
+    <span class="sprint-info" id="sprint-info">依進線順序點選得分選手</span>
+    <button id="btn-prev-lap" class="btn btn-nav-lap" onclick="prevSprintLap()">◂ 上一圈</button>
+    <button id="btn-next-lap" class="btn btn-nav-lap" onclick="nextSprintLap()">下一圈 ▸</button>
+    <button id="btn-unheard" class="btn btn-unheard" onclick="commitUncertainRound()">⚠️ 沒聽清楚</button>
+    <button class="btn btn-outline" onclick="backToSetup()">⚙️</button>
+  </div>
+
+  <div id="commit-timer-bar" class="commit-timer-bar"></div>
+
+  <div class="entry">
+    <div class="entry-step">
+      <div class="step-hd" id="hd-picks"><span class="step-no">1</span><span>依進線順序點得分選手</span></div>
+      <div id="round-picks" class="round-picks">
+        <span class="round-picks-empty">👆 點下方名單</span>
+      </div>
+    </div>
+    <div class="entry-step" id="entry-pos">
+      <div class="step-hd" id="hd-pos"><span class="step-no">2</span><span id="pos-q">選手這圈在哪</span></div>
+      <div class="pos-btns" id="pos-btns"></div>
+    </div>
+  </div>
+
+  <div class="arrow-down">▼ ▼ ▼</div>
+  <div id="advice" class="advice"></div>
+
+  <div id="race-list" class="race-list"></div>
+</div>
+
+<script>
+// ═══════════ State ═══════════
+// Group: { id, name, athletes: Athlete[], sprintLaps: number[], currentSprintIdx: number, history: Action[] }
+// Athlete: { bib, name, score, starred }
+let groups = [];
+let currentGroupId = null;
+let expandedGroupId = null;
+let selectedGroupId = null;
+let roundPicks = [];
+// 本圈剛確認的位置，以號碼布為 key（一組可能有多位王者選手）
+// 未確認者 → 沿用 g.starPos[bib]
+let roundPos = {};
+// 本圈第一次點選的時間（毫秒）。用來估圈速：相鄰計分圈的時間差。
+// 大會報秒→按下的延遲若近似固定，相減會抵消 ⇒ Δt 對真實圈速無偏。
+let roundT = null;
+let forwardStack = []; // [{picks, sprintIdx}, ...] rounds popped during back-nav (already deducted)
+let commitTimer = null;
+const COMMIT_DELAY = 2000;
+// history 同時是 undo buffer 與「唯一的比賽日誌」，所以不能截斷。
+// 舊版 MAX_UNDO = 20 會讓 5000 公尺計分賽（22 個計分圈）靜默丟掉最早 2 輪 ——
+// 分數不會錯（累加在 athlete 上），但日誌缺頭，建議引擎會拿到殘缺資料。
+// 一場最多 ~22 筆，無記憶體壓力。
+let idSeq = 1;
+
+function newId() { return String(idSeq++); }
+
+// 排名：先比分數，同分者按「推估實力」排（seed，越小越強），
+// 沒有 seed 的（手動新增）退回號碼布。
+// ⚠️ 不能用號碼布當同分 tiebreak —— 那會讓預設清單的推估排序在第一次 render 就失效。
+function byScoreThenSeed(a, b) {
+  if (b.score !== a.score) return b.score - a.score;
+  const sa = a.seed ?? Infinity, sb = b.seed ?? Infinity;
+  if (sa !== sb) return sa - sb;
+  return parseInt(a.bib) - parseInt(b.bib);
+}
+
+function curGroup() { return groups.find(g => g.id === currentGroupId) || null; }
+
+// Compute default sprint laps: last (N-3) laps, i.e. laps (N-4) down to 0
+function defaultSprintLaps(totalLaps) {
+  const laps = [];
+  for (let i = totalLaps - 4; i >= 0; i--) laps.push(i);
+  return laps;
+}
+
+// ═══════════ Persistence ═══════════
+const STORAGE_KEY = 'rc-log-groups-v1';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ groups, idSeq, selectedGroupId }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!Array.isArray(s.groups) || s.groups.length === 0) return false;
+    groups = s.groups;
+    idSeq = s.idSeq || idSeq;
+    selectedGroupId = s.selectedGroupId || groups[0].id;
+    return true;
+  } catch(e) { return false; }
+}
+
+function resetToSampleData() {
+  if (!confirm('確定重置為預設清單？目前所有組別、分數與設定都會清除。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ═══════════ Setup ═══════════
+
+function addGroup() {
+  const el = document.getElementById('inp-group-name');
+  const name = el.value.trim();
+  if (!name) return;
+  const lapLength = 200, raceDistance = 3000;
+  const totalLaps = raceDistance / lapLength;
+  const g = { id: newId(), name, athletes: [], sprintLaps: defaultSprintLaps(totalLaps), currentSprintIdx: 0, history: [], lapLength, raceDistance };
+  groups.push(g);
+  el.value = '';
+  expandedGroupId = g.id; // auto-expand newly created group
+  selectedGroupId = g.id; // auto-select newly created group
+  renderGroupsList();
+  updateStartBar();
+}
+
+function deleteGroup(id) {
+  if (!confirm('確定刪除此組別？')) return;
+  groups = groups.filter(g => g.id !== id);
+  if (expandedGroupId === id) expandedGroupId = null;
+  if (selectedGroupId === id) selectedGroupId = groups.length > 0 ? groups[0].id : null;
+  renderGroupsList();
+  updateStartBar();
+}
+
+function toggleGroup(id) {
+  expandedGroupId = expandedGroupId === id ? null : id;
+  selectedGroupId = id; // selecting a group to expand also marks it for race
+  renderGroupsList();
+  updateStartBar();
+}
+
+function renderGroupsList() {
+  const container = document.getElementById('groups-list');
+  if (groups.length === 0) {
+    container.innerHTML = '<div style="padding:12px 0 4px;text-align:center;color:var(--text-dim);font-size:14px">請新增至少一個組別</div>';
+    return;
+  }
+  container.innerHTML = groups.map(g => {
+    const expanded = expandedGroupId === g.id;
+    const selected = selectedGroupId === g.id;
+    return `
+    <div class="group-card${selected ? ' selected' : ''}" id="gc-${g.id}">
+      <div class="group-header" onclick="toggleGroup('${g.id}')">
+        <div class="group-radio"></div>
+        <span class="group-name">${esc(g.name)}</span>
+        <span class="group-meta">${g.athletes.length} 人｜${g.raceDistance}m</span>
+        <button class="btn-group-delete" onclick="event.stopPropagation();deleteGroup('${g.id}')">✕</button>
+        <span class="group-expand">${expanded ? '▲' : '▼'}</span>
+      </div>
+      ${expanded ? renderGroupBody(g) : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderGroupBody(g) {
+  const totalLaps = g.raceDistance / g.lapLength;
+  const lapOk = Number.isInteger(totalLaps);
+  const distOptions = [3000, 5000];
+  const isCustom = !distOptions.includes(g.raceDistance);
+
+  const athleteRows = g.athletes.map((a, i) => `
+    <div class="athlete-setup-row ${a.starred ? 'starred' : ''}">
+      <span class="star-toggle" onclick="toggleAthleteStar('${g.id}', ${i})">${a.starred ? '★' : '☆'}</span>
+      <span class="bib">#${a.bib}</span>
+      <span class="name">${esc(a.name)}</span>
+      <button class="btn-delete" onclick="removeAthlete('${g.id}', ${i})">✕</button>
+    </div>
+  `).join('');
+
+  let sprintHtml = '';
+  if (lapOk) {
+    for (let i = totalLaps - 1; i >= 0; i--) {
+      const isFinal = i === 0;
+      const isActive = g.sprintLaps.includes(i);
+      let cls = 'lap-chip';
+      if (isFinal) cls += ' final';
+      else if (isActive) cls += ' active';
+      sprintHtml += `<div class="${cls}" onclick="toggleSprintLap('${g.id}', ${i})">${isFinal ? '🏁' : i}</div>`;
+    }
+  } else {
+    sprintHtml = '<div style="font-size:13px;color:var(--text-dim)">請先設定有效的比賽距離</div>';
+  }
+
+  const distHtml = `
+    <div class="sub-title">比賽距離設定</div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">單圈長度</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="laplen-${g.id}" value="${g.lapLength}" inputmode="numeric"
+          style="width:80px;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:var(--bg);color:var(--text);font-size:15px;font-family:inherit"
+          onchange="setLapLength('${g.id}', this.value)">
+        <span style="font-size:14px;color:var(--text-dim)">m</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">賽距</div>
+      <div class="dist-options">
+        ${distOptions.map(d => `<button class="dist-btn ${g.raceDistance === d && !isCustom ? 'active' : ''}" onclick="setRaceDistance('${g.id}', ${d})">${d}m</button>`).join('')}
+        <button class="dist-btn ${isCustom ? 'active' : ''}" onclick="setRaceDistance('${g.id}', 'custom')">其他</button>
+      </div>
+      ${isCustom ? `<div class="dist-custom-row">
+        <input type="number" id="custdist-${g.id}" value="${g.raceDistance}" inputmode="numeric" placeholder="輸入距離"
+          onchange="setCustomDistance('${g.id}', this.value)">
+        <span style="font-size:14px;color:var(--text-dim)">m</span>
+      </div>` : ''}
+      ${lapOk
+        ? `<div class="dist-info">✓ ${g.raceDistance}m ÷ ${g.lapLength}m = ${totalLaps} 圈</div>`
+        : `<div class="dist-warning">⚠️ ${g.raceDistance}m 不是 ${g.lapLength}m 的倍數，請重新輸入</div>`
+      }
+    </div>`;
+
+  return `
+  <div class="group-body">
+    ${distHtml}
+    <div class="sub-title">選手名單</div>
+    <div class="athlete-form">
+      <input type="number" placeholder="號碼布" inputmode="numeric" style="max-width:85px" id="bib-${g.id}">
+      <input type="text" placeholder="姓名" id="name-${g.id}">
+      <button class="btn btn-add-sm" onclick="addAthlete('${g.id}')">＋</button>
+    </div>
+    <div class="athlete-setup-list">${athleteRows || '<div style="color:var(--text-dim);font-size:13px;padding:4px 0">尚未新增選手</div>'}</div>
+    <div class="sub-title" style="margin-top:14px">得分圈設定 <span style="font-weight:400;font-size:11px;color:var(--text-dim)">（🏁 最後一圈固定得分）</span></div>
+    <div class="sprint-laps-grid">${sprintHtml}</div>
+  </div>`;
+}
+
+function addAthlete(groupId) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  const bibEl = document.getElementById(`bib-${groupId}`);
+  const nameEl = document.getElementById(`name-${groupId}`);
+  const bib = bibEl.value.trim();
+  const name = nameEl.value.trim();
+  if (!bib || isNaN(bib) || !name) return;
+  g.athletes.push({ bib, name, score: 0, starred: false, seed: g.athletes.length });
+  bibEl.value = '';
+  nameEl.value = '';
+  bibEl.focus();
+  renderGroupsList();
+  saveState();
+}
+
+function removeAthlete(groupId, idx) {
+  const g = groups.find(x => x.id === groupId);
+  if (g) { g.athletes.splice(idx, 1); renderGroupsList(); saveState(); }
+}
+
+function toggleAthleteStar(groupId, idx) {
+  const g = groups.find(x => x.id === groupId);
+  if (g) { g.athletes[idx].starred = !g.athletes[idx].starred; renderGroupsList(); saveState(); }
+}
+
+function setLapLength(groupId, val) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  const n = parseInt(val);
+  if (!n || n <= 0) return;
+  g.lapLength = n;
+  const total = g.raceDistance / g.lapLength;
+  if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
+  renderGroupsList();
+  saveState();
+}
+
+function setRaceDistance(groupId, val) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  if (val === 'custom') {
+    if ([3000, 5000].includes(g.raceDistance)) g.raceDistance = 0;
+  } else {
+    g.raceDistance = parseInt(val);
+    const total = g.raceDistance / g.lapLength;
+    if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
+  }
+  renderGroupsList();
+  saveState();
+}
+
+function setCustomDistance(groupId, val) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  const n = parseInt(val);
+  if (!n || n <= 0) return;
+  g.raceDistance = n;
+  const total = g.raceDistance / g.lapLength;
+  if (Number.isInteger(total)) g.sprintLaps = defaultSprintLaps(total);
+  renderGroupsList();
+  saveState();
+}
+
+function toggleSprintLap(groupId, lap) {
+  if (lap === 0) return;
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  const idx = g.sprintLaps.indexOf(lap);
+  if (idx >= 0) g.sprintLaps.splice(idx, 1);
+  else g.sprintLaps.push(lap);
+  g.sprintLaps.sort((a, b) => b - a);
+  renderGroupsList();
+  saveState();
+}
+
+function updateStartBar() {
+  const lbl = document.getElementById('start-group-label');
+  if (!lbl) return;
+  const g = groups.find(g => g.id === selectedGroupId);
+  lbl.textContent = g ? '出賽組別：' + g.name : (groups.length > 0 ? '點選組別以選定出賽組別' : '');
+}
+
+function startRace() {
+  if (groups.length === 0) { alert('請新增至少一個組別'); return; }
+  if (!selectedGroupId) selectedGroupId = groups[0].id;
+  // Reset race state for all groups
+  groups.forEach(g => {
+    g.athletes.forEach(a => a.score = 0);
+    g.sprintLaps.sort((a, b) => b - a);
+    g.currentSprintIdx = 0;
+    g.progressSprintIdx = 0;
+    g.history = [];
+    g.starPos = {};
+    g.focusBib = null;
+  });
+  currentGroupId = selectedGroupId;
+  roundPicks = []; roundPos = {}; roundT = null;
+  forwardStack = [];
+  clearTimeout(commitTimer);
+  // Initialise progressSprintIdx on each group
+  groups.forEach(g => { g.progressSprintIdx = 0; });
+  document.getElementById('setup-screen').classList.remove('active');
+  document.getElementById('race-screen').classList.add('active');
+  updateSprintBar();
+  sortAndRender();
+  showHint();
+}
+
+function showHint() {
+  document.getElementById('hint-overlay').classList.add('visible');
+}
+
+function dismissHint() {
+  document.getElementById('hint-overlay').classList.remove('visible');
+}
+
+function backToSetup() {
+  clearTimeout(commitTimer);
+  document.getElementById('race-screen').classList.remove('active');
+  document.getElementById('setup-screen').classList.add('active');
+  renderGroupsList();
+}
+
+// ═══════════ Race ═══════════
+
+function renderGroupSelector() {
+  const sel = document.getElementById('group-select');
+  sel.innerHTML = groups.map(g =>
+    `<option value="${g.id}" ${g.id === currentGroupId ? 'selected' : ''}>${esc(g.name)}</option>`
+  ).join('');
+}
+
+function switchGroup(id) {
+  // Commit any pending picks for current group first
+  clearTimeout(commitTimer);
+  if (roundPicks.length > 0) commitRound(false); // commit silently without auto-advance
+  currentGroupId = id;
+  roundPicks = []; roundPos = {}; roundT = null;
+  forwardStack = [];
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  renderRoundPicks();
+  updateSprintBar();
+  sortAndRender();
+}
+
+function curLap() {
+  const g = curGroup();
+  return g ? (g.sprintLaps[g.currentSprintIdx] ?? null) : null;
+}
+function isFinal() { return curLap() === 0; }
+function maxPicks() { return isFinal() ? 3 : 2; }
+function ptsForPick(idx) { return isFinal() ? [3,2,1][idx] || 0 : [2,1][idx] || 0; }
+
+
+// ════════════════════════════════════════════════════════════════
+//  建議引擎（rule-based · 純離線 · 無網路呼叫）
+// ════════════════════════════════════════════════════════════════
+//
+//  為什麼是規則而不是 runtime 打 LLM：
+//   1. 決策空間是封閉的算術（剩餘席次／得分人數／晉級線），LLM 只會算錯
+//   2. 計分圈每 ~22 秒一次，網路來回不可靠，而場邊訊號常常很差
+//   3. client-side 呼叫等於把 API key 寫進 HTML
+//   4. 「智慧」其實在 TIERS 這張賽前分級表裡 —— 那是離線做好的
+//
+//  賽前實力分級（key = 號碼布）。來源：歷史成績資料庫 537 人／5969 筆。
+//  A 頂級｜B 有得分實績｜C 有紀錄但弱｜D 零計分賽紀錄
+//  用途：C／D 級的人得分 ⇒ 有人跳出來（可能有戰術）⇒ 晉級線會被推高 ⇒ 提早警示
+//
+const TIERS = {
+  // ── 115 有氧盃・兒童 B 男・3000 公尺計分賽・預賽 Heat 2 ──
+  '2273': 'A', // 鄭瑀鎧 3000計分 4:52.449 全場最快
+  '1494': 'A', // 王聖翔 113理事長／113中正 第1
+  '1186': 'A', // 李揚   4:52.690
+  '2204': 'A', // 廖品翔 4:59.376
+  '2089': 'B', // 郭駿燁 有第1實績，但 113中正同組第16
+  '1076': 'B', // 陳彥安 115總統 第5
+  '1035': 'B', // 蔣至凱 114中正 靠搶分拿第5
+  '1588': 'B', // 賈勁揚 114理事長 第4
+  '1246': 'C', // 蔡宸昊 115總統 第18 淘汰
+  '2081': 'C', // 林霆昊 5:30.596 第11
+  '1377': 'C', // 郭亮均 115總統 第13
+  '2091': 'C', // 曾天陽 115總統 第22 淘汰
+  '1240': 'D', // 黃祺栩 零計分賽紀錄
+  '2515': 'D', // 李萬宇 零計分賽紀錄
+  '2437': 'D', // 劉愷樂 零計分賽紀錄
+  '2079': 'D', // 吳羿寰 零計分賽紀錄
+};
+const CUT_DEFAULT = 8;
+
+// ════════════════════════════════════════════════════════════════
+//  場次 75 Heat 2 專屬 metadata（來源：8/9 出場序 PDF）
+//  UNIT：代表單位 —— 配分偵測的必要條件。同單位出現 ≥2 個得分者 ⇒ 可疑
+//  LATER：今天場次 75 之後還有的比賽 ⇒ 有保留動機。
+//         這類人一旦開始搶分，代表他放棄保留 ⇒ 劇本翻了
+//  只有這一組有；其他組查不到就跳過相關偵測（不會壞）
+// ════════════════════════════════════════════════════════════════
+const UNIT = {
+  '2089':'Elite','2081':'Elite','2091':'Elite','2079':'Elite',   // Elite Alliance 4 人
+  '1494':'桃園','1588':'桃園',                                     // 桃園市溜委會 2 人
+  '1240':'COLOR','1246':'COLOR',                                  // COLOR 2 人
+  '1035':'王者','2273':'南市大灣','1076':'克里斯','1186':'Augur',
+  '2204':'南市安慶','1377':'STORM','2515':'東縣康樂','2437':'屏東',
+};
+const LATER = {
+  '2273':'5000淘汰','1494':'5000淘汰','1246':'5000淘汰','1035':'5000淘汰',
+  '1377':'5000淘汰','2437':'5000淘汰','2515':'200補賽',
+};
+
+// ── 圈速估計：相鄰計分圈的輸入時間差 ──────────────────────────
+// 大會報秒→按下的延遲若近似固定，相減會抵消 ⇒ Δt 對真實圈速無偏，
+// 殘餘誤差來自延遲抖動（約 ±1 秒，22 秒圈上 ~4%）。
+// 因此：2～3 秒的加速看得出來，0.5 秒的漂移看不出來。
+// 污染源：漏聽或手慢的那一圈 Δt 偏大、下一圈偏小（成對出現）
+//   → 基準用中位數而非平均；跳圈的不計入。
+function lapPace(g) {
+  const rs = (g.history || []).filter(h => h.type === 'round' && h.t)
+    .slice().sort((a, b) => a.sprintIdx - b.sprintIdx);
+  const out = [];
+  for (let i = 1; i < rs.length; i++) {
+    if (rs[i].sprintIdx !== rs[i-1].sprintIdx + 1) continue;   // 中間跳圈 → 不可用
+    out.push({ idx: rs[i].sprintIdx, sec: (rs[i].t - rs[i-1].t) / 1000,
+               shaky: !!(rs[i].uncertain || rs[i-1].uncertain) });
+  }
+  return out;
+}
+function median(xs) {
+  if (!xs.length) return null;
+  const v = xs.slice().sort((a, b) => a - b), m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m-1] + v[m]) / 2;
+}                       // 晉級線（取前幾名）
+function seatsForLap(lap) { return lap === 0 ? 3 : 2; }   // 最後圈 3/2/1，其餘 2/1
+
+function analyze() {
+  const g = curGroup();
+  if (!g) return null;
+  const cut  = g.cutLine ?? CUT_DEFAULT;
+  const laps = g.sprintLaps || [];
+  const finished = curLap() === null;
+
+  // 剩餘計分席次（含當前這圈）
+  let remainingSeats = 0, remainingLaps = 0;
+  if (!finished) {
+    for (let i = g.currentSprintIdx; i < laps.length; i++) {
+      remainingSeats += seatsForLap(laps[i]);
+      remainingLaps++;
+    }
+  }
+
+  // 「沒聽清楚」的圈 → 未知席次（分數不記給任何人，但確實有人拿走了）
+  const unknownRounds = (g.history || []).filter(h => h.uncertain);
+  const unknownSeats  = unknownRounds.reduce((n, h) => n + (h.seats || 2), 0);
+
+  // 與畫面同一套排序（byScoreThenSeed）—— 否則建議裡的名次會跟清單位置不一致
+  const sorted = [...g.athletes].sort(byScoreThenSeed);
+  const known  = sorted.filter(a => a.score > 0);
+  const zeros  = sorted.filter(a => a.score === 0);
+
+  // 得分人數是一個區間，不是一個數字
+  //   下界 = 已記錄的得分者
+  //   上界 = 已記錄 ＋ 未知席次可能落在不同的 0 分者身上（保守）
+  const maybeScored = Math.min(unknownSeats, zeros.length);
+  const scorersMin  = known.length;
+  const scorersMax  = known.length + maybeScored;
+
+  // ★ 最關鍵的一個數字：0 分的人還剩幾個名額
+  //   計分賽先比分數再比時間 ⇒ 有分的人全部排在 0 分的人前面
+  //   所以「前 cut 名」扣掉得分人數，就是留給 0 分者的名額（他們之間再按完賽時間排）
+  //   用 scorersMax（保守）計算，寧可偏緊不偏鬆
+  const zeroSlots = Math.max(0, cut - scorersMax);
+  const zeroCount = zeros.length;
+
+  // 焦點選手：一組可能有多位王者選手，建議一次只針對一位
+  const stars = sorted.filter(a => a.starred);
+  const focus = stars.find(a => a.bib === g.focusBib) || stars[0] || null;
+  const fb = focus ? focus.bib : null;
+  const SP = (g.starPos && typeof g.starPos === 'object') ? g.starPos : {};
+  const pos = (fb && (roundPos[fb] ?? SP[fb])) || null;
+  // 位置軌跡（最近 4 圈，只看焦點選手）—— 看得出他是不是一路往後掉
+  const trail = (g.history || []).filter(h => h.type === 'round').slice(-4)
+    .map(h => (h.pos && typeof h.pos === 'object' ? h.pos[fb] : h.pos) || null);
+  // 名次：同分時真實排序看完賽時間（本 app 看不到）⇒ 給區間，不給假的單一數字
+  const star = focus;
+  let rankBest = null, rankWorst = null, gapToCut = null, passIfOne = null;
+  if (star) {
+    rankBest  = 1 + sorted.filter(a => a.score >  star.score).length;
+    rankWorst =     sorted.filter(a => a.score >= star.score).length;
+    const cutA = sorted[cut - 1];
+    gapToCut  = cutA ? Math.max(0, cutA.score - star.score) : 0;
+    // 再拿 1 分會排到第幾名（保守：同分者都算在他前面）
+    // 這比「跳過幾個人」有用得多 —— 直接回答「這 1 分夠不夠」
+    passIfOne = 1 + sorted.filter(a => a.bib !== star.bib && a.score >= star.score + 1).length;
+  }
+
+  // 分級表警示：C／D 級的人得分了 ⇒ 有人跳出來，名額被吃掉的速度比預期快
+  const surprises = known.filter(a => !a.starred && (TIERS[a.bib] === 'C' || TIERS[a.bib] === 'D'));
+
+
+  // 得分狀態五態，與位置三態交叉 ⇒ 15 種處境，各有對應動作
+  let sc;
+  if (!star)                                    sc = 'NOSTAR';
+  else if (star.score > 0 && rankWorst <= cut)  sc = 'SAFE';     // 有分且在區內
+  else if (star.score > 0)                      sc = 'OUT_PTS';  // 有分但在區外
+  else if (scorersMax >= cut)                   sc = 'MUST';     // 0 分且名額已滿
+  else if (zeroSlots <= 2)                      sc = 'TIGHT';    // 0 分且名額很緊
+  else                                          sc = 'OK';       // 0 分但名額還夠
+
+  // 其他王者選手的即時狀態（給焦點切換用的小晶片）
+  const starInfo = stars.map(a => ({
+    bib: a.bib, name: a.name, score: a.score,
+    rank: 1 + sorted.filter(x => x.score > a.score).length,
+    pos: (roundPos[a.bib] ?? SP[a.bib]) || null,
+    focused: a.bib === fb,
+  }));
+
+  return { cut, finished, remainingSeats, remainingLaps, unknownSeats,
+           unknownCount: unknownRounds.length, scorersMin, scorersMax,
+           zeroSlots, zeroCount, star, rankBest, rankWorst, gapToCut, passIfOne,
+           surprises, total: g.athletes.length, trail, pos, sc,
+           stars: starInfo, focusBib: fb };
+}
+
+// 位置是「本圈的一個欄位」，不是全局開關；而且是「每位王者選手各一份」。
+// 點下去 → 記為本圈輸入（roundPos[bib]），提交時寫進該圈的 history 紀錄。
+// ════════════════════════════════════════════════════════════════
+//  訊號偵測層 —— 從實際得分序列與圈速辨識「現在在演哪個劇本」
+//
+//  刻意用「優先佇列」而不是「組合矩陣」：
+//  5 個訊號就是 5 條獨立規則，不是 2^5 格。新增第 6 條時前 5 條不用動。
+//  每條都回傳 {sev, key, text}，sev 越大越優先，顯示時只取最上面幾條。
+// ════════════════════════════════════════════════════════════════
+function detectSignals(g, A) {
+  const sig = [];
+  const scored = g.athletes.filter(a => a.score > 0);
+  const rounds = (g.history || []).filter(h => h.type === 'round');
+  const laps = rounds.length;                       // 已記錄的計分圈數
+
+  // ① 配分嫌疑：同單位出現 ≥2 個不同得分者
+  const byUnit = {};
+  scored.forEach(a => { const u = UNIT[a.bib]; if (u) (byUnit[u] = byUnit[u] || []).push(a); });
+  Object.entries(byUnit).filter(([, v]) => v.length >= 2).forEach(([u, v]) => {
+    sig.push({ sev: 9, key: 'collude',
+      text: `<b>${esc(u)} 已有 ${v.length} 人得分</b>（${v.map(a => esc(a.name)+' '+a.score).join('、')}）`
+          + ` → 疑似配分，0 分名額被吃得比預期快` });
+  });
+
+  // ② 保留者反悔：今天之後還有比賽的人卻在搶分 ⇒ 劇本翻了
+  const flip = scored.filter(a => LATER[a.bib] && !a.starred);
+  if (flip.length) {
+    sig.push({ sev: 8, key: 'noflinch',
+      text: `<b>${flip.map(a => esc(a.name)).join('、')} 今天還有 ${esc(LATER[flip[0].bib])} 卻已得分</b>`
+          + ` → 他們不打算保留，前段不會鬆` });
+  }
+
+  // ③ 前段在巡航：A 級至今 0 分（需至少 3 個計分圈才有意義）
+  const tierA = g.athletes.filter(a => TIERS[a.bib] === 'A');
+  if (tierA.length && laps >= 3) {
+    const quiet = tierA.filter(a => a.score === 0);
+    if (quiet.length === tierA.length) {
+      sig.push({ sev: 7, key: 'cruise',
+        text: `<b>A 級 ${tierA.length} 人（${tierA.map(a => esc(a.name)).join('、')}）至今 0 分</b>`
+            + ` → 前段在巡航，<b>計分圈是鬆的，現在貼線</b>` });
+    }
+  }
+
+  // ④ 弱者跳出來：C／D 級得分，而同單位有更強的人在場 ⇒ 有人在帶
+  const helped = scored.filter(a => {
+    const t = TIERS[a.bib];
+    if (t !== 'C' && t !== 'D') return false;
+    const u = UNIT[a.bib]; if (!u) return false;
+    return g.athletes.some(x => x.bib !== a.bib && UNIT[x.bib] === u
+                             && (TIERS[x.bib] === 'A' || TIERS[x.bib] === 'B'));
+  });
+  if (helped.length) {
+    sig.push({ sev: 6, key: 'helped',
+      text: `<b>${helped.map(a => esc(a.name)+'（'+TIERS[a.bib]+'級）').join('、')} 得分</b>`
+          + ` → 同單位有強者在場，可能是被帶上去的` });
+  }
+
+  // ⑤ 圈速：集團加速 or 放慢（需 ≥4 筆估計才有基準）
+  const pace = lapPace(g);
+  if (pace.length >= 4) {
+    const base = median(pace.slice(0, -1).filter(p => !p.shaky).map(p => p.sec));
+    const last = pace[pace.length - 1];
+    if (base != null && !last.shaky) {
+      const d = last.sec - base;
+      if (d <= -2.0) sig.push({ sev: 10, key: 'surge',
+        text: `<b>集團加速了</b>：上一圈 ${last.sec.toFixed(1)} 秒，比基準快 ${(-d).toFixed(1)} 秒`
+            + ` → <b>搶分窗口正在關閉</b>` });
+      else if (d >= 1.5) sig.push({ sev: 5, key: 'slow',
+        text: `集團放慢：上一圈 ${last.sec.toFixed(1)} 秒，比基準慢 ${d.toFixed(1)} 秒`
+            + ` → 大家在觀望，<b>貼線的機會</b>` });
+    }
+  }
+  return { sig: sig.sort((a, b) => b.sev - a.sev), pace };
+}
+
+function setStarPos(pos) {
+  const g = curGroup(); if (!g) return;
+  if (curLap() === null) return;
+  const A = analyze(); const fb = A && A.focusBib; if (!fb) return;
+  if (!g.starPos || typeof g.starPos !== 'object') g.starPos = {};
+  roundPos[fb] = (roundPos[fb] === pos) ? undefined : pos;
+  if (roundPos[fb] === undefined) delete roundPos[fb];
+  else g.starPos[fb] = pos;
+  if (navigator.vibrate) navigator.vibrate(25);
+  renderEntry(); renderAdvice(); saveState();
+}
+
+// 切換建議要針對哪一位王者選手
+function setFocus(bib) {
+  const g = curGroup(); if (!g) return;
+  g.focusBib = bib;
+  if (navigator.vibrate) navigator.vibrate(15);
+  renderEntry(); renderAdvice(); saveState();
+}
+
+// 渲染「② 位置」那一格。一組可能有多位王者選手 → 先用晶片選焦點，再選位置。
+// 填色＝本圈剛確認｜虛線＝沿用上一圈
+function renderEntry() {
+  const g = curGroup();
+  const A = g ? analyze() : null;
+  const hdPicks = document.getElementById('hd-picks');
+  const hdPos   = document.getElementById('hd-pos');
+  const entry   = document.getElementById('entry-pos');
+  const btns    = document.getElementById('pos-btns');
+  if (!btns) return;
+
+  if (hdPicks) hdPicks.className = 'step-hd' + (roundPicks.length >= maxPicks() ? ' done' : '');
+  const stars = A ? A.stars : [];
+  if (entry) entry.style.display = stars.length ? '' : 'none';
+  if (!stars.length) { btns.innerHTML = ''; return; }
+
+  const fb = A.focusBib;
+  const done = roundPos[fb] !== undefined;
+  const eff = A.pos;
+  const carried = !done && !!eff;
+  if (hdPos) {
+    hdPos.className = 'step-hd' + (done ? ' done' : '');
+    const who = stars.length > 1 ? '這位選手' : esc(stars[0].name);
+    hdPos.innerHTML = `<span class="step-no">2</span><span>${who}這圈在哪</span>`
+      + (carried ? '<span class="carried-tag">沿用上一圈</span>' : '');
+  }
+
+  // 多位王者 → 焦點晶片（分數・名次・已選位置）
+  const PS = { front: '前', back: '後', dropped: '掉' };
+  const chips = stars.length > 1
+    ? `<div class="star-chips">` + stars.map(st =>
+        `<button class="chip ${st.focused ? 'on' : ''}" onclick="setFocus('${st.bib}')">`
+        + `${esc(st.name)}<span class="chip-n">${st.score}分・${st.rank}</span>`
+        + (st.pos ? `<span class="chip-p">${PS[st.pos]}</span>` : '<span class="chip-p none">?</span>')
+        + `</button>`).join('') + `</div>`
+    : '';
+
+  const L = { front: '集團前段', back: '集團後段', dropped: '已掉隊' };
+  btns.innerHTML = chips + `<div class="pos-row">` + ['front','back','dropped'].map(k =>
+    `<button class="pos-btn ${eff===k ? (carried ? 'carried' : 'on') : ''}" data-p="${k}"
+             onclick="setStarPos('${k}')">${L[k]}</button>`).join('') + `</div>`;
+}
+
+function renderAdvice() {
+  const el = document.getElementById('advice');
+  if (!el) return;
+  const g = curGroup();
+  const A = analyze();
+  if (!A) { el.innerHTML = ''; return; }
+
+  // ── 判斷 ＝ 得分狀態 × 位置 ──────────────────────────────
+  //  三層顯示，而且刻意把「指令」放在最大字：
+  //    ① order  = 要做什麼（f(得分狀態, 位置)，兩個輸入任一改變就整句換）
+  //    ② reason = 為什麼（分數／名額／位置，小字）
+  //    ③ how    = 怎麼做（具體動作）
+  const nm = A.star ? esc(A.star.name) : '';
+  const rk = A.star ? (A.rankBest === A.rankWorst ? `第 ${A.rankBest} 名` : `第 ${A.rankBest}～${A.rankWorst} 名`) : '';
+  const P  = A.pos;
+  const sd = A.star ? A.star.score : 0;
+
+  // ① 指令：5 種得分狀態 × 3 種位置
+  const ORDER = {
+    SAFE:    { front: '守住就好，不用再拚', back: '不必回前面，安全完賽',   dropped: '有分就穩了，安全完賽' },
+    OUT_PTS: { front: '再拿 1 分',         back: '先上到前段',           dropped: '收力，安全完賽' },
+    MUST:    { front: '現在就要搶分',       back: '先上到前段，否則搶不到', dropped: '這場放掉，收力給下一場' },
+    TIGHT:   { front: '準備貼線，別等最後一圈', back: '先往前挪',          dropped: '這場放掉，收力給下一場' },
+    OK:      { front: '維持住就好',         back: '往前挪到前段',          dropped: '這場放掉，收力給下一場' },
+  };
+  // ③ 方法
+  const HOW = {
+    SAFE:    { front: '分數已經贏過所有 0 分的人。', back: '名次已經由分數決定。',
+               dropped: '<b>分數贏過所有 0 分的人 —— 不用為了名次冒摔倒的風險。</b>' },
+    OUT_PTS: { front: `再拿 1 分就跳到<b>第 ${A.passIfOne} 名</b>。貼在領先者後面過線拿第 2 名（不用破風）。`,
+               back: '在後段拿不到分。<b>跟著已經在往前移動的人上去，不要自己發動。</b>',
+               dropped: '掉隊又在區外，機會很小。' },
+    MUST:    { front: '<b>貼在領先者後面過線拿第 2 名那 1 分</b> —— 第 2 名 1 分，不用破風。',
+               back: '<b>跟著已經在往前移動的人上去，不要自己發動。</b>後段搶不到衝刺圈。',
+               dropped: '掉隊後 0 分幾乎不可能靠完賽時間晉級（實測慢 6 秒就排在領先集團所有 0 分者後面）。' },
+    TIGHT:   { front: '<b>貼在領先者後面過線拿第 2 名那 1 分</b>（不用破風）。',
+               back: '<b>跟著已經在往前移動的人上去。</b>集團分裂時你在前段還是後段決定你在哪一邊。',
+               dropped: '掉隊後 0 分幾乎不可能靠完賽時間晉級。' },
+    OK:      { front: '別做多餘的事，最後兩圈再拚。',
+               back: '<b>跟著已經在往前移動的人上去。</b>集團分裂時你在前段還是後段決定你在哪一邊。',
+               dropped: '掉隊後 0 分幾乎不可能靠完賽時間晉級。' },
+  };
+  // ② 狀態摘要
+  const SCORE_TXT = {
+    SAFE:    `${nm} <b>${sd}</b> 分・${rk}（晉級區內）`,
+    OUT_PTS: `${nm} <b>${sd}</b> 分・${rk}，距第 ${A.cut} 名差 <b>${A.gapToCut}</b> 分`,
+    MUST:    A.scorersMin >= A.cut
+      ? `${nm} 0 分，名額已被 <b>${A.scorersMin}</b> 人佔滿`
+      : `${nm} 0 分，名額可能已滿（得分 <b>${A.scorersMin}～${A.scorersMax}</b> 人）`,
+    TIGHT:   `${nm} 0 分，0 分名額只剩 <b>${A.zeroSlots}</b> 個／<b>${A.zeroCount}</b> 人搶`,
+    OK:      `${nm} 0 分，0 分名額還有 <b>${A.zeroSlots}</b> 個／<b>${A.zeroCount}</b> 人搶`,
+  };
+  const POS_TXT = { front: '集團前段', back: '集團後段', dropped: '<b>已掉出集團</b>' };
+
+  let cls, order, reason = '', how = '';
+  if (A.finished) {
+    cls = 'dim'; order = '🏁 比賽結束';
+    if (A.star) reason = `${nm} <b>${sd}</b> 分・${rk}`;
+  } else if (A.sc === 'NOSTAR') {
+    cls = 'dim'; order = '沒有標星號的選手';
+    reason = '到設定頁點 ☆ 指定要追蹤的選手';
+  } else if (!P) {
+    cls = 'dim'; order = `👆 先選 ${nm} 這圈的位置`;
+    reason = SCORE_TXT[A.sc];
+    how = '<b>沒有位置就給不出建議</b> —— 同樣的分數，在集團前段和已掉隊要做的事完全相反。';
+  } else {
+    // 掉隊會把 0 分／區外一律拉成紅燈；SAFE 不受影響（分數贏過所有 0 分者）
+    const base = { SAFE: 'green', OUT_PTS: 'amber', MUST: 'red', TIGHT: 'amber', OK: 'green' }[A.sc];
+    cls = (P === 'dropped' && A.sc !== 'SAFE') ? 'red' : base;
+    const ico = cls === 'red' ? '🔴' : cls === 'amber' ? '🟠' : '🟢';
+    order  = `<span class="ico">${ico}</span>${ORDER[A.sc][P]}`;
+    reason = `${SCORE_TXT[A.sc]}<span class="sep">·</span>${POS_TXT[P]}`;
+    how    = HOW[A.sc][P];
+  }
+
+  // ── 數字列 ──
+  const stats = [];
+  stats.push(`<span class="stat">剩餘計分圈 <b>${A.remainingLaps}</b></span>`);
+  stats.push(`<span class="stat${A.scorersMax >= A.cut ? ' hot' : A.zeroSlots <= 2 ? ' warn' : ''}">得分人數 <b>${
+    A.scorersMin === A.scorersMax ? A.scorersMin : A.scorersMin + '～' + A.scorersMax}</b> / ${A.total}</span>`);
+  stats.push(`<span class="stat${A.zeroSlots <= 2 ? ' hot' : ''}">0 分名額 <b>${A.zeroSlots}</b> / ${A.zeroCount} 人</span>`);
+  if (A.unknownCount > 0)
+    stats.push(`<span class="stat warn">沒聽清楚 <b>${A.unknownCount}</b> 圈</span>`);
+  if (A.star && A.gapToCut > 0)
+    stats.push(`<span class="stat hot">距第 ${A.cut} 名差 <b>${A.gapToCut}</b> 分</span>`);
+  // 掉出集團的人搶不到衝刺圈 → 這個數字會跟「這場結束了」互相矛盾，不顯示
+  if (A.star && !A.finished && A.pos !== 'dropped')
+    stats.push(`<span class="stat${A.passIfOne <= A.cut ? '' : ' hot'}">再拿 1 分 → 第 <b>${A.passIfOne}</b> 名</span>`);
+  if (A.trail.some(Boolean)) {
+    const S = { front: '前', back: '後', dropped: '掉' };
+    stats.push(`<span class="stat">位置軌跡 <b>${A.trail.map(x => S[x] || '?').join('·')}</b></span>`);
+  }
+
+  // ── 觀測到的訊號（優先佇列，最多顯示 3 條）──────────────────
+  const D = detectSignals(g, A);
+  let obs = '';
+  if (!A.finished && D.sig.length) {
+    obs = `<div class="obs"><div class="obs-hd">觀測到</div>`
+      + D.sig.slice(0, 3).map(x => `<div class="obs-row s${x.sev}">${x.text}</div>`).join('')
+      + `</div>`;
+  }
+  // 圈速（估計值，明確標示誤差來源）
+  let paceLine = '';
+  if (D.pace.length >= 2) {
+    const good = D.pace.filter(p => !p.shaky).map(p => p.sec);
+    const med = median(good);
+    const last = D.pace[D.pace.length - 1];
+    paceLine = `<div class="pace">圈速估計（報秒→輸入的時間差，誤差約 ±1 秒）：`
+      + `上一圈 <b>${last.sec.toFixed(1)}s</b>${last.shaky ? '（該圈沒聽清楚，不可靠）' : ''}`
+      + (med != null ? `　中位數 <b>${med.toFixed(1)}s</b>　共 ${good.length} 筆` : '')
+      + `</div>`;
+  }
+
+  el.innerHTML = `<div class="alarm ${cls}">`
+      + `<div class="order">${order}</div>`
+      + (reason ? `<div class="reason">${reason}</div>` : '')
+      + (how ? `<div class="how">${how}</div>` : '')
+    + `</div>`
+    + `<div class="advice-stats">${stats.join('')}</div>`
+    + obs
+    + paceLine;
+}
+
+// 「這圈沒聽清楚」：記錄「有 N 個席次被不知道是誰的人拿走」，然後前進。
+// 分數不記給任何人 —— 引擎改用區間運算，只會偏保守，不會偏樂觀。
+function commitUncertainRound() {
+  const g = curGroup(); if (!g) return;
+  const lap = curLap(); if (lap === null) return;
+  clearTimeout(commitTimer);
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none'; bar.style.width = '0%';
+  document.getElementById('race-list').classList.remove('countdown-running');
+
+  // 撤掉這圈未提交的點選
+  for (const pk of roundPicks) {
+    const a = g.athletes.find(x => x.bib === pk.bib);
+    if (a) a.score -= pk.points;
+  }
+  roundPicks = [];
+
+  // 這圈若已有紀錄，先扣回再覆蓋
+  let keepT2 = roundT;
+  const exist = g.history.findLastIndex(h => h.type === 'round' && h.sprintIdx === g.currentSprintIdx);
+  if (exist !== -1) {
+    const old = g.history.splice(exist, 1)[0];
+    if (old.t) keepT2 = old.t;
+    for (const pk of (old.picks || [])) {
+      const a = g.athletes.find(x => x.bib === pk.bib);
+      if (a) a.score -= pk.points;
+    }
+  }
+  g.history.push({ type: 'round', picks: [], sprintIdx: g.currentSprintIdx,
+                   uncertain: true, seats: seatsForLap(lap),
+                   pos: { ...(g.starPos || {}), ...roundPos },
+                   t: keepT2 || Date.now() });
+  roundPos = {}; roundT = null;
+
+  // 推進（與 commitRound 相同邏輯）
+  const committedIdx = g.currentSprintIdx;
+  const progress = g.progressSprintIdx ?? 0;
+  const atProgress = committedIdx >= progress;
+  drainForwardStack(g, committedIdx);
+  if (atProgress) g.progressSprintIdx = Math.min(progress + 1, g.sprintLaps.length - 1);
+  g.currentSprintIdx = (g.sprintLaps[committedIdx] === 0)
+    ? g.sprintLaps.length
+    : (g.progressSprintIdx ?? committedIdx);
+
+  if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+  renderRoundPicks(); updateSprintBar(); animatedSortAndRender();
+  saveState();
+}
+
+function updateSprintBar() {
+  const lap = curLap();
+  document.getElementById('lap-num').textContent = lap === null ? '—' : lap === 0 ? '🏁' : lap;
+  const typeEl = document.getElementById('lap-type');
+  if (lap === null) {
+    typeEl.textContent = '比賽結束'; typeEl.className = 'lap-type normal';
+  } else if (isFinal()) {
+    typeEl.textContent = '最後一圈 (3/2/1)'; typeEl.className = 'lap-type final';
+  } else {
+    typeEl.textContent = '得分圈 (2/1)'; typeEl.className = 'lap-type normal';
+  }
+  const left = maxPicks() - roundPicks.length;
+  document.getElementById('sprint-info').innerHTML = left > 0
+    ? `還可選 <strong>${left}</strong> 人`
+    : `<strong>已選滿 ✓</strong>`;
+  // Disable next button when at/beyond progress with nothing to restore
+  const g = curGroup();
+  const nextBtn = document.getElementById('btn-next-lap');
+  if (nextBtn && g) {
+    const atProgress = g.currentSprintIdx >= (g.progressSprintIdx ?? g.currentSprintIdx);
+    nextBtn.disabled = forwardStack.length === 0 && roundPicks.length === 0 && atProgress;
+    nextBtn.style.opacity = nextBtn.disabled ? '0.35' : '';
+  }
+  // Disable prev button when nothing to go back to
+  const prevBtn = document.getElementById('btn-prev-lap');
+  if (prevBtn && g) {
+    prevBtn.disabled = g.history.length === 0 && forwardStack.length === 0;
+    prevBtn.style.opacity = prevBtn.disabled ? '0.35' : '';
+  }
+  const unheardBtn = document.getElementById('btn-unheard');
+  if (unheardBtn) {
+    unheardBtn.disabled = lap === null;
+    unheardBtn.style.opacity = unheardBtn.disabled ? '0.35' : '';
+  }
+  renderEntry();
+  renderAdvice();
+}
+
+function renderRoundPicks() {
+  const c = document.getElementById('round-picks');
+  if (roundPicks.length === 0) {
+    c.innerHTML = '<span class="round-picks-empty">👆 依進線順序點選得分選手</span>';
+    return;
+  }
+  const g = curGroup();
+  c.innerHTML = roundPicks.map(p => {
+    const a = g.athletes.find(x => x.bib === p.bib);
+    const cls = p.points === 3 ? 'pts3' : p.points === 2 ? 'pts2' : 'pts1';
+    return `<span class="round-pick-tag ${cls}">#${p.bib} ${esc(a?.name || '')} +${p.points}</span>`;
+  }).join('');
+}
+
+function onTapAthlete(bib) {
+  // Race finished — ignore taps
+  if (curLap() === null) return;
+  if (roundPicks.length >= maxPicks()) {
+    clearTimeout(commitTimer);
+    const bar = document.getElementById('commit-timer-bar');
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    document.getElementById('race-list').classList.remove('countdown-running');
+    // Revert all current picks
+    const g0 = curGroup();
+    for (const p of roundPicks) {
+      const a0 = g0.athletes.find(x => x.bib === p.bib);
+      if (a0) a0.score -= p.points;
+      const c0 = document.querySelector(`[data-bib="${p.bib}"]`);
+      if (c0) {
+        c0.classList.remove('picked');
+        const se = c0.querySelector('.score');
+        if (se) se.innerHTML = `${a0.score}<span class="score-unit">分</span>`;
+      }
+    }
+    roundPicks = [];
+    // fall through to register the new tap as pick[0]
+  }
+  if (roundPicks.length === 0 && roundT === null) roundT = Date.now();
+  if (roundPicks.some(p => p.bib === bib)) return;
+  // forwardStack items are already deducted from scores; just proceed with new picks
+  const pts = ptsForPick(roundPicks.length);
+  const g = curGroup();
+  const a = g.athletes.find(x => x.bib === bib);
+  if (!a) return;
+  a.score += pts;
+  roundPicks.push({ bib, points: pts });
+  if (navigator.vibrate) navigator.vibrate(40);
+  const card = document.querySelector(`[data-bib="${bib}"]`);
+  if (card) {
+    card.classList.remove('tap-flash');
+    void card.offsetWidth;
+    card.classList.add('tap-flash');
+    card.classList.add('picked');
+    const scoreEl = card.querySelector('.score');
+    if (scoreEl) scoreEl.innerHTML = `${a.score}<span class="score-unit">分</span><span class="pending-badge">+${pts}</span>`;
+  }
+  updateSprintBar();
+  renderRoundPicks();
+  // Only start the countdown after ALL required picks are entered
+  if (roundPicks.length >= maxPicks()) scheduleCommit();
+}
+
+function scheduleCommit() {
+  clearTimeout(commitTimer);
+  document.getElementById('race-list').classList.add('countdown-running');
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  void bar.offsetWidth;
+  bar.style.transition = `width ${COMMIT_DELAY}ms linear`;
+  bar.style.width = '0%';
+  commitTimer = setTimeout(() => commitRound(true), COMMIT_DELAY);
+}
+
+function commitRound(autoAdvance) {
+  if (roundPicks.length === 0) return;
+  const g = curGroup();
+  // If there is already a committed history entry for this exact lap, deduct it first
+  // (happens when re-scoring the final lap which cannot advance further)
+  let keepT = roundT;
+  const existingIdx = g.history.findLastIndex(h => h.type === 'round' && h.sprintIdx === g.currentSprintIdx);
+  if (existingIdx !== -1) {
+    const old = g.history.splice(existingIdx, 1)[0];
+    // 保留原本的時間戳 —— 事後修正發生在較晚的牆鐘時間，會污染圈速估計
+    if (old.t) keepT = old.t;
+    for (const p of old.picks) {
+      const a = g.athletes.find(x => x.bib === p.bib);
+      if (a) a.score -= p.points;
+    }
+  }
+  g.history.push({ type: 'round', picks: [...roundPicks], sprintIdx: g.currentSprintIdx,
+                   pos: { ...(g.starPos || {}), ...roundPos }, t: keepT || Date.now() });
+  roundPicks = []; roundPos = {}; roundT = null; roundT = null;
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  document.getElementById('race-list').classList.remove('countdown-running');
+  if (autoAdvance) {
+    const committedIdx = g.currentSprintIdx;
+    const progress = g.progressSprintIdx ?? 0;
+    const atProgress = committedIdx >= progress;
+    drainForwardStack(g, committedIdx);
+    if (atProgress) {
+      g.progressSprintIdx = Math.min(progress + 1, g.sprintLaps.length - 1);
+    }
+    // If we just committed the final lap (sprintLaps[committedIdx] === 0),
+    // advance past the array end so curLap() returns null → 比賽結束
+    if (g.sprintLaps[committedIdx] === 0) {
+      g.currentSprintIdx = g.sprintLaps.length; // out-of-bounds → curLap() = null
+    } else {
+      g.currentSprintIdx = g.progressSprintIdx ?? committedIdx;
+    }
+  }
+  renderRoundPicks();
+  updateSprintBar();
+  animatedSortAndRender();
+  saveState();
+}
+
+function drainForwardStack(g, fromIdx = -1) {
+  while (forwardStack.length > 0) {
+    const h = forwardStack[0];
+    if (h.sprintIdx <= fromIdx) {
+      forwardStack.shift(); // discard — being replaced by the new commit
+      continue;
+    }
+    forwardStack.shift();
+    for (const p of h.picks) {
+      const a = g.athletes.find(x => x.bib === p.bib);
+      if (a) a.score += p.points;
+    }
+    g.history.push(h);
+  }
+}
+
+function prevSprintLap() {
+  clearTimeout(commitTimer);
+  const bar = document.getElementById('commit-timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  const g = curGroup();
+  if (!g) return;
+  // Revert any uncommitted picks immediately
+  for (const p of roundPicks) {
+    const a = g.athletes.find(x => x.bib === p.bib);
+    if (a) a.score -= p.points;
+  }
+  roundPicks = []; roundPos = {}; roundT = null;
+  // Pop last history entry, deduct its scores, push to FRONT of forwardStack
+  if (g.history.length > 0) {
+    const h = g.history.pop();
+    if (h.type === 'round') {
+      for (const p of h.picks) {
+        const a = g.athletes.find(x => x.bib === p.bib);
+        if (a) a.score -= p.points;
+      }
+      forwardStack.unshift(h);
+      g.currentSprintIdx = h.sprintIdx;
+    }
+  } else if (g.currentSprintIdx > 0) {
+    g.currentSprintIdx--;
+  }
+  updateSprintBar();
+  renderRoundPicks();
+  animatedSortAndRender();
+}
+
+function nextSprintLap() {
+  clearTimeout(commitTimer);
+  const g = curGroup();
+  if (!g) return;
+  if (roundPicks.length > 0) {
+    // Re-scored a past lap: commit, restore intermediates, jump to progress
+    commitRound(false);
+    drainForwardStack(g);
+    g.currentSprintIdx = g.progressSprintIdx ?? g.currentSprintIdx;
+  } else if (forwardStack.length > 0) {
+    // Navigate forward without re-scoring: restore one step
+    const h = forwardStack.shift();
+    for (const p of h.picks) {
+      const a = g.athletes.find(x => x.bib === p.bib);
+      if (a) a.score += p.points;
+    }
+    g.history.push(h);
+    g.currentSprintIdx = h.sprintIdx + 1;
+  }
+  // If forwardStack empty and at/beyond progress: blocked (next button disabled)
+  roundPicks = []; roundPos = {}; roundT = null;
+  updateSprintBar();
+  renderRoundPicks();
+  animatedSortAndRender();
+}
+
+function undoLastPick() {
+  if (roundPicks.length > 0) {
+    clearTimeout(commitTimer);
+    const last = roundPicks.pop();
+    const g = curGroup();
+    const a = g.athletes.find(x => x.bib === last.bib);
+    if (a) a.score -= last.points;
+    const card = document.querySelector(`[data-bib="${last.bib}"]`);
+    if (card) {
+      card.classList.remove('picked');
+      const se = card.querySelector('.score');
+      if (se) se.innerHTML = `${a.score}<span class="score-unit">分</span>`;
+    }
+    updateSprintBar();
+    renderRoundPicks();
+    // Only restart countdown if all required picks are still present
+    if (roundPicks.length >= maxPicks()) scheduleCommit();
+    else {
+      const bar = document.getElementById('commit-timer-bar');
+      bar.style.transition = 'none';
+      bar.style.width = '0%';
+    }
+    return;
+  }
+  const g = curGroup();
+  if (!g || g.history.length === 0) return;
+  const h = g.history.pop();
+  if (h.type === 'round') {
+    for (const p of h.picks) {
+      const a = g.athletes.find(x => x.bib === p.bib);
+      if (a) a.score -= p.points;
+    }
+    // revert sprint index
+    g.currentSprintIdx = h.sprintIdx;
+  }
+  updateSprintBar();
+  animatedSortAndRender();
+}
+
+// ── Render ──
+function animatedSortAndRender() {
+  const list = document.getElementById('race-list');
+  const cards = list.querySelectorAll('.athlete-card');
+  const oldPos = {};
+  cards.forEach(c => { oldPos[parseInt(c.dataset.bib)] = c.getBoundingClientRect(); });
+  const g = curGroup();
+  if (!g) return;
+  const oldRank = {};
+  g.athletes.forEach((a, i) => { oldRank[a.bib] = i + 1; });
+  g.athletes.sort(byScoreThenSeed);
+  const rc = {};
+  g.athletes.forEach((a, i) => { rc[a.bib] = (oldRank[a.bib] || i+1) - (i+1); });
+  renderRaceCards(rc);
+  list.querySelectorAll('.athlete-card').forEach(card => {
+    const bib = parseInt(card.dataset.bib);
+    const old = oldPos[bib];
+    if (!old) return;
+    const dy = old.top - card.getBoundingClientRect().top;
+    if (Math.abs(dy) < 2) return;
+    card.style.transition = 'none';
+    card.style.transform = `translateY(${dy}px)`;
+    void card.offsetWidth;
+    card.style.transition = 'transform 0.45s cubic-bezier(0.4,0,0.2,1)';
+    card.style.transform = 'translateY(0)';
+  });
+  setTimeout(() => {
+    list.querySelectorAll('.rank-change').forEach(el => { el.className = 'rank-change'; });
+  }, 2500);
+}
+
+function sortAndRender() {
+  const g = curGroup();
+  if (g) g.athletes.sort(byScoreThenSeed);
+  renderRaceCards({});
+}
+
+function renderRaceCards(rankChanges) {
+  const g = curGroup();
+  const pickedBibs = new Set(roundPicks.map(p => p.bib));
+  const raceList = document.getElementById('race-list');
+  const athleteCount = g ? g.athletes.length : 0;
+  const isDense = athleteCount > 8;
+  raceList.classList.toggle('dense', isDense);
+  const rowCount = isDense ? Math.ceil(athleteCount / 2) : (athleteCount || 1);
+  raceList.style.setProperty('--row-count', rowCount);
+  raceList.innerHTML = (g ? g.athletes : []).map((a, i, arr) => {
+    // Tie-aware rank: find first index with same score
+    const rank = i === 0 ? 1 : (arr[i].score === arr[i-1].score ? null : i + 1);
+    const displayRank = rank !== null ? rank : (function(){ let r = i; while(r > 0 && arr[r].score === arr[r-1].score) r--; return r+1; })();
+    let rc = displayRank === 1 ? 'top1' : displayRank === 2 ? 'top2' : displayRank === 3 ? 'top3' : '';
+    const ch = rankChanges[a.bib] || 0;
+    let chCls = '', chTxt = '';
+    if (ch > 0) { chCls = 'up'; chTxt = `▲${ch}`; }
+    else if (ch < 0) { chCls = 'down'; chTxt = `▼${Math.abs(ch)}`; }
+    return `
+    <div class="athlete-card ${a.starred ? 'starred' : ''} ${pickedBibs.has(a.bib) ? 'picked' : ''}"
+         data-bib="${a.bib}" onclick="onTapAthlete('${a.bib}')">
+      <div class="rank ${rc}">${displayRank}</div>
+      <div class="athlete-info">
+        <div class="bib-line">
+          <span class="bib">${a.bib}</span>${a.noData ? '<span class="nodata">?</span>' : ''}
+        </div>
+        <div class="name-line"><span class="name">${esc(a.name)}</span></div>
+      </div>
+      <div class="score">${a.score}<span class="score-unit">分</span></div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Init — load from localStorage, or seed sample groups on first visit
+if (!loadState()) {
+  (function seedSampleGroups() {
+  function makeSampleGroup({ name, lapLength = 200, raceDistance = 3000, cutLine = CUT_DEFAULT, athletes }) {
+    const totalLaps = raceDistance / lapLength;
+    return {
+      id: newId(),
+      name,
+      lapLength,
+      raceDistance,
+      cutLine,                    // 晉級線：取前幾名（建議引擎用）
+      sprintLaps: Number.isInteger(totalLaps) ? defaultSprintLaps(totalLaps) : [],
+      currentSprintIdx: 0,
+      progressSprintIdx: 0,
+      starPos: null,              // 星號選手位置：'front' | 'back' | 'dropped' | null
+      history: [],
+      athletes
+    };
+  }
+
+  // 前綴：* = 要追蹤的星號選手｜? = 歷史資料庫查無紀錄（排序位置無依據）
+  // 陣列順序 = seed（推估名次，0 最強），由 scripts/seed_order_115.py 產生
+  function parseAthletes(raw) {
+    return raw.trim().split('\n').map((line, i) => {
+      let d = line.trim(), starred = false, noData = false;
+      while (d[0] === '*' || d[0] === '?') {
+        if (d[0] === '*') starred = true; else noData = true;
+        d = d.slice(1);
+      }
+      const [, bib, name] = d.match(/^(\d+)(.+)$/);
+      return { bib, name, score: 0, starred, noData, seed: i };
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  115 有氧盃 · 計分賽 · 收「兒童組 ＋ 該 heat 有任何王者選手」，星號 = 全部王者
+  //  王者溜冰隊 = 號碼布 1001–1050（團隊名冊 p10：1051 起為成淵高中）
+  //  已排除：王者 0 人（140 兒童D男／141 兒童C男）、
+  //          非兒童組（76 青少年女／77 青少年男／79 青年男／80 成年男／148 成年女）、
+  //          依賴預賽故無出發名單（142 兒童B男 3000 決賽、144–147、149）
+  //  ⚠️ 上方 TIERS 分級表只涵蓋場次 75 Heat 2，其他組不會觸發
+  //     「預期外得分（C／D 級）」警示，其餘功能正常。
+  //
+  //  名稱前綴 = 場次號碼（現場廣播念的就是這個，是唯一可靠的進度訊號）
+  //  時間 = 依組數累加推估，已考慮行程壓縮（scripts/estimate_schedule.py，間隔 1.0 分）：
+  //    · 8/20 15:00 時段列了 76 組，照跑需 442 分 → 22:22 才結束，大會必然壓縮。
+  //      但可壓縮的量有 46%（205 分）集中在場次 81–85（5000／10000 淘汰預賽），
+  //      全部在場次 75 之後 ⇒ 壓縮不會讓場次 75 提前，16:38 這個估計站得住。
+  //      真正的風險方向相反：前面 50 組 500+D 若延遲，場次 75 會更晚。
+  //    · 8/21 15:00 時段照跑需 270 分 → 19:30 結束，合理 ⇒ 不需壓縮，
+  //      136／139／143 三場的估計直接可用。
+  // ══════════════════════════════════════════════════════════════
+  const sampleGroups = [
+    // 場次 75 Heat 1 · 兒童B男子組 · 3000公尺計分賽預賽
+    // 32 人分 2 組，各取前 8 進決賽｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 2 人：1032 楊坤曜(推估第4) 1033 萬宇軒(推估第10)
+    // 排序＝歷史 3000 計分名次推估：9/16 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '75｜8/20 16:38 兒童B男 3000計分 預H1（取前8）',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+2031陳彣祐
+1869翁秉毅
+1556陳士弘
+*1032楊坤曜
+1249蘇柏昇
+1489丁苡翔
+2083翁翊凱
+1554連子熙
+1516李乾瑜
+*?1033萬宇軒
+?1244蔡侑呈
+?1846謝宇哲
+?2034黃紹恩
+?2195田鎧睿
+?2417李若銓
+?2441薛稑燁
+      `)
+    },
+    // 場次 75 Heat 2 · 兒童B男子組 · 3000公尺計分賽預賽
+    // 32 人分 2 組，各取前 8 進決賽｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 1 人：1035 蔣至凱(推估第9)
+    // 排序＝歷史 3000 計分名次推估：11/16 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '75｜8/20 16:45 ★兒童B男 3000計分 預H2（取前8）',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+2273鄭瑀鎧
+1494王聖翔
+2089郭駿燁
+1076陳彥安
+1186李揚
+2204廖品翔
+1588賈勁揚
+1246蔡宸昊
+*1035蔣至凱
+2081林霆昊
+1377郭亮均
+?1240黃祺栩
+?2079吳羿寰
+?2091曾天陽
+?2437劉愷樂
+?2515李萬宇
+      `)
+    },
+    // 場次 136 · 兒童D女子組 · 3000公尺計分賽決賽
+    // 決賽一輪；前 8 有獎狀｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 1 人：1008 林亮妤(推估第3)
+    // 排序＝歷史 3000 計分名次推估：3/16 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '136｜8/21 17:34 兒童D女 3000計分 決賽',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+1202徐秭霈
+1362楊子嫻
+*1008林亮妤
+?1113林品妤
+?1271林琪恩
+?1475鄭湘禔
+?1682陳星妤
+?1714詹宸安
+?1858紀雨葵
+?1916賴子筠
+?1937王萱筑
+?1946陳薈米
+?2057王昱棠
+?2393林已榛
+?2405蕭曼苓
+?2506張宸菲
+      `)
+    },
+    // 場次 137 · 兒童C女子組 · 3000公尺計分賽決賽
+    // 決賽一輪；前 8 有獎狀｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 4 人：1013 張臣媛(推估第1) 1011 洪愷彤(推估第2) 1023 藍敏之(推估第3) 1021 蕭語彤(推估第6)
+    // 排序＝歷史 3000 計分名次推估：10/19 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '137｜8/21 17:41 兒童C女 3000計分 決賽',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+*1013張臣媛
+*1011洪愷彤
+*1023藍敏之
+2062林亮彤
+1670甘智頤
+*1021蕭語彤
+1117黃允樂
+1422江品慧
+1478蕭艾蓉
+2386王星霓
+?1354紀詠心
+?1443洪昀霏
+?1680陳亮宇
+?1841陳語棠
+?1856江芷玲
+?1974洪汩彤
+?2191游臻穻
+?2262何珞安
+?2408謝喬安
+      `)
+    },
+    // 場次 138 · 兒童B女子組 · 3000公尺計分賽決賽
+    // 決賽一輪；前 8 有獎狀｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 2 人：1014 張晏寧(推估第1) 1006 吳宥臻(推估第2)
+    // 排序＝歷史 3000 計分名次推估：3/16 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '138｜8/21 17:47 兒童B女 3000計分 決賽',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+*1014張晏寧
+*1006吳宥臻
+1948廖若喬
+?1059陳怡安
+?1118黃苡珊
+?1165吳宣妤
+?1363楊芷寧
+?1681陳姵靜
+?1755蕭詩樺
+?1938林熙婷
+?1945陳庭萱
+?2064許友寧
+?2068陳韻絜
+?2261田祐瑄
+?2391周妤蕎
+?2396林恩嘉
+      `)
+    },
+    // 場次 139 · 兒童A女子組 · 3000公尺計分賽決賽
+    // 決賽一輪；前 8 有獎狀｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 1 人：1016 陳怡如(推估第1)
+    // 排序＝歷史 3000 計分名次推估：3/16 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '139｜8/21 17:54 兒童A女 3000計分 決賽',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+*1016陳怡如
+1466楊芷妮
+2076謝琦
+?1285郭芮帆
+?1477蕭艾唯
+?1673周良弈
+?1674徐芷晴
+?1678陳雨葳
+?1861張晴媄
+?1862梁紫彤
+?2060吳玥亭
+?2193謝宸媗
+?2263李宥瑩
+?2329蔡安姸
+?2388吳晏瑄
+?2397許芷綺
+      `)
+    },
+    // 場次 143 · 兒童A男子組 · 3000公尺計分賽決賽
+    // 決賽一輪；前 8 有獎狀｜15 圈 → 計分圈 12 個 → 總分 39
+    // 王者 1 人：1030 曾偉翔(推估第3)
+    // 排序＝歷史 3000 計分名次推估：7/18 人有紀錄，其餘 ? 標記墊底
+    {
+      name: '143｜8/21 18:20 兒童A男 3000計分 決賽',
+      raceDistance: 3000,
+      cutLine: 8,
+      athletes: parseAthletes(`
+1953吳敏瑞
+1373周恩弘
+*1030曾偉翔
+2511張宸睿
+2435葉軒宇
+1382魏煜國
+1538徐靖皓
+?1572湯翔予
+?1601鄭仁剛
+?1607鍾昕宸
+?1690徐盛恩
+?1760李昱霆
+?1871許定璿
+?1874黃祐廷
+?2037趙宥熙
+?2199陳又嘉
+?2443譚駿宥
+?2554游之承
+      `)
+    }
+  ];
+
+  groups.push(...sampleGroups.map(makeSampleGroup));
+  selectedGroupId = groups[0].id;
+  expandedGroupId = groups[0].id;
+  saveState();
+  })(); // end seedSampleGroups
+} // end if (!loadState())
+
+renderGroupsList();
+updateStartBar();
+</script>
+</body>
+</html>

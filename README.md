@@ -1,8 +1,16 @@
-# points-race
+# 字宙防衛隊
+
+康軒一般版小一上、小一下、小二上國語學習遊戲。以太空射擊、行星關卡、戰機換裝與武器兌換練習國字、注音、部首及詞語。
+
+👉 **[開啟字宙防衛隊](https://munrochiang.github.io/points-race/)**
+
+舊版競速溜冰計分賽工具保留於 **[points-race.html](https://munrochiang.github.io/points-race/points-race.html)**。
+
+---
+
+## 舊版 Points Race 說明
 
 競速溜冰**計分賽**的場邊即時記分與建議工具。單一 HTML 檔、**零外部依賴、完全離線**（localStorage 保存，無任何網路呼叫）。
-
-👉 **[開啟工具](https://munrochiang.github.io/points-race/)**
 
 手機用法：用 Safari／Chrome 開上面的連結 → 分享 →「加入主畫面」，之後就是一個離線 app。
 
@@ -47,9 +55,9 @@
 單一檔案無建置，測試用 node ＋ DOM stub 直接 eval 真實程式碼：
 
 ```bash
-A=$(grep -n '^<script>$' index.html | head -1 | cut -d: -f1)
-B=$(grep -n '^</script>$' index.html | tail -1 | cut -d: -f1)
-sed -n "$((A+1)),$((B-1))p" index.html > /tmp/main.js
+A=$(grep -n '^<script>$' points-race.html | head -1 | cut -d: -f1)
+B=$(grep -n '^</script>$' points-race.html | tail -1 | cut -d: -f1)
+sed -n "$((A+1)),$((B-1))p" points-race.html > /tmp/main.js
 node test/run.js /tmp/main.js test/tbody.js
 ```
 
