@@ -75,10 +75,30 @@
     .hero-mech .glow { animation: pulse 1.2s ease-in-out infinite alternate; transform-origin: center; }
     @keyframes pulse { to { opacity: .45; transform: scale(.92); } }
 
-    .setup-card { background: var(--paper); border: 5px solid var(--ink); border-radius: 30px 30px 12px 30px; padding: clamp(22px, 4vw, 34px); box-shadow: 14px 16px 0 rgba(2, 11, 28, .45); position: relative; }
+    .setup-card { background: var(--paper); border: 5px solid var(--ink); border-radius: 30px 30px 12px 30px; padding: clamp(22px, 3vw, 30px); box-shadow: 14px 16px 0 rgba(2, 11, 28, .45); position: relative; }
     .setup-card::before { content: "作戰設定"; position: absolute; top: -18px; right: 24px; padding: 7px 18px; background: var(--yellow); border: 4px solid var(--ink); border-radius: 999px; font-weight: 1000; transform: rotate(2deg); }
     .setup-card h2 { margin: 2px 0 8px; font-size: 26px; }
     .hint { margin: 0 0 16px; color: #60708a; line-height: 1.5; font-weight: 700; font-size: 14px; }
+    .campaign-panel { margin: 4px 0 18px; padding: 12px; color: white; background: linear-gradient(145deg, #07172d, #153d70); border: 3px solid var(--ink); border-radius: 18px 7px; box-shadow: inset 0 0 20px rgba(101,233,255,.13); }
+    .campaign-summary, .system-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .campaign-summary { margin-bottom: 9px; }
+    .campaign-summary strong { color: var(--yellow); font-size: 14px; }
+    .review-count { padding: 4px 8px; color: var(--cyan); background: rgba(101,233,255,.1); border: 1px solid rgba(101,233,255,.42); border-radius: 999px; font-size: 10px; font-weight: 1000; }
+    .system-nav button { width: 34px; height: 30px; padding: 0; color: white; background: #17375f; border: 2px solid #54779f; border-radius: 9px; font-weight: 1000; cursor: pointer; }
+    .system-name { flex: 1; text-align: center; }
+    .system-name small { display: block; color: #8fb2d8; font-size: 8px; font-weight: 1000; letter-spacing: .18em; }
+    .system-name b { display: block; margin-top: 1px; font-size: 15px; }
+    .campaign-levels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 9px; }
+    .campaign-level { min-width: 0; min-height: 58px; padding: 5px 2px; color: #9fb2cb; background: #0d2441; border: 2px solid #365a82; border-radius: 10px; cursor: pointer; }
+    .campaign-level span, .campaign-level small, .campaign-level b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .campaign-level span { font-size: 19px; }
+    .campaign-level b { margin-top: 1px; font-size: 9px; }
+    .campaign-level small { margin-top: 2px; color: #6e88a7; font-size: 8px; }
+    .campaign-level.selected { color: var(--ink); background: var(--yellow); border-color: white; box-shadow: 0 0 12px rgba(255,216,77,.45); transform: translateY(-2px); }
+    .campaign-level.selected small { color: #765713; }
+    .campaign-level.cleared small { color: var(--yellow); }
+    .campaign-level:disabled { opacity: .36; filter: grayscale(1); cursor: default; }
+    .mission-note { margin: 8px 2px 0; color: #a9c3df; text-align: center; font-size: 9px; font-weight: 900; }
     .book-options { display: grid; gap: 10px; }
     .book-option input { position: absolute; opacity: 0; pointer-events: none; }
     .book-option label {
@@ -263,6 +283,20 @@
     .stage-banner small { display: block; color: var(--yellow); font-size: 10px; font-weight: 1000; letter-spacing: .2em; }
     .stage-banner strong { display: block; margin-top: 3px; font-size: 25px; }
 
+    .boss-ship { position: absolute; left: calc(50% - 89px); top: 4%; z-index: 7; width: min(220px, 29vw); translate: -50% -150%; color: white; text-align: center; pointer-events: none; opacity: 0; transition: translate .65s cubic-bezier(.2,.9,.25,1.15), opacity .35s; filter: drop-shadow(0 13px 12px rgba(0,0,0,.55)); }
+    .battlefield.boss-mode .boss-ship { translate: -50% 0; opacity: 1; }
+    .boss-hull { position: relative; height: 82px; background: linear-gradient(145deg, #9d2eea, #2e124f 62%, #12091f); border: 5px solid #f3b2ff; clip-path: polygon(50% 0,64% 24%,94% 16%,82% 52%,100% 75%,66% 70%,50% 100%,34% 70%,0 75%,18% 52%,6% 16%,36% 24%); box-shadow: inset 0 0 22px #e66cff; }
+    .boss-hull::before { content: ""; position: absolute; left: 42%; top: 34%; width: 16%; aspect-ratio: 1; border-radius: 50%; background: white; box-shadow: 0 0 8px 6px var(--red), 0 0 22px 12px #f03fff; animation: enemyEye .45s ease-in-out infinite alternate; }
+    .battlefield.webgl-ready .boss-hull { opacity: .12; }
+    .boss-name { display: block; margin: -3px auto 4px; width: max-content; max-width: 96%; padding: 3px 10px; background: rgba(7,23,45,.94); border: 2px solid #e99bff; border-radius: 999px; color: #f3c4ff; font-size: 10px; font-weight: 1000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .boss-meter { height: 10px; padding: 2px; background: #06030b; border: 2px solid white; transform: skewX(-12deg); }
+    .boss-meter-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2c67, #ff8c42); transition: width .35s; }
+    .boss-ship.shake { animation: bossHit .55s ease; }
+    @keyframes bossHit { 25% { transform: translateX(-13px) scale(1.08); filter: brightness(2.5) drop-shadow(0 0 24px white); } 55% { transform: translateX(12px) scale(.97); } }
+    .battlefield.boss-mode .enemy-unit { filter: drop-shadow(0 0 11px #e66cff) drop-shadow(0 10px 7px rgba(0,0,0,.35)); }
+    .battlefield.boss-mode .question-shell { border-color: #e99bff; box-shadow: inset 0 0 25px rgba(168,42,225,.3), 0 0 22px rgba(226,83,255,.3); }
+    .question-type.review span { background: var(--cyan); }
+
     .player-craft { --ship-accent-light: #3b9cff; --ship-accent-dark: #154aa8; --ship-glow: #65e9ff; position: absolute; left: 50%; bottom: 1%; z-index: 7; width: clamp(125px, 18vw, 178px); translate: -50% 0; text-align: center; filter: drop-shadow(0 14px 10px rgba(0,0,0,.5)); animation: playerHover 1.6s ease-in-out infinite alternate; }
     .player-craft[data-paint="red"] { --ship-accent-light: #ff6f72; --ship-accent-dark: #a31328; --ship-glow: #ff9d74; }
     .player-craft[data-paint="gold"] { --ship-accent-light: #ffe568; --ship-accent-dark: #b97808; --ship-glow: #fff1a1; }
@@ -398,6 +432,7 @@
       .mini-badges { justify-content: center; }
       .hero-mech { width: 250px; margin-bottom: -48px; }
       .setup-card { width: min(540px, 100%); margin: auto; }
+      .campaign-levels { grid-template-columns: repeat(3, 1fr); }
       .game { grid-template-rows: auto minmax(0, 1fr); }
       .hud-logo b { display: none; }
       .meter-wrap { min-width: 95px; }
@@ -448,6 +483,7 @@
       .route-node::after { margin-inline: 1px; font-size: 10px; }
       .route-planet { width: 20px; height: 20px; font-size: 11px; }
       .stage-banner { left: 50%; width: calc(100% - 38px); }
+      .boss-ship { left: 50%; top: 112px; width: min(190px, 48vw); }
       .result-card { padding: 24px 17px; }
     }
 
@@ -481,8 +517,8 @@
       <div class="brand-panel">
         <p class="eyebrow">ORIGINAL MECHA LEARNING GAME</p>
         <h1 id="gameTitle">字宙<em>防衛隊</em></h1>
-        <p class="tagline">啟動國語核心，從地球一路飛向土星！<br>認生字、換裝戰機、守住五大行星航道。</p>
-        <div class="mini-badges"><span>全程點擊</span><span>五大行星</span><span>自由換裝</span><span>平板最佳化</span></div>
+        <p class="tagline">啟動國語核心，從地球一路飛出銀河！<br>闖過 48 關、迎戰巨型 Boss，錯過的題目會再度回航。</p>
+        <div class="mini-badges"><span>48 個關卡</span><span>每關有 Boss</span><span>自動記錄錯題</span><span>平板最佳化</span></div>
         <svg class="hero-mech" viewBox="0 0 460 330" role="img" aria-label="藍白色原創學習機甲">
           <ellipse class="glow" cx="224" cy="297" rx="160" ry="24" fill="#65e9ff" opacity=".3"/>
           <path d="M135 275 88 314l80-18m153-25 58 37-91-16" fill="none" stroke="#65e9ff" stroke-width="12" stroke-linecap="round" opacity=".7"/>
@@ -503,11 +539,20 @@
       </div>
 
       <div class="setup-card">
-        <h2>選擇學習範圍</h2>
-        <p class="hint">康軒一般版，可複選冊別與課次；題目包含國字、注音與部首。</p>
+        <h2>星際遠征</h2>
+        <p class="hint">每關約 5～10 分鐘，結尾都有 Boss；過關後會自動存檔。</p>
+        <section class="campaign-panel" aria-label="選擇遠征關卡">
+          <div class="campaign-summary"><strong id="campaignProgress">已抵達 1 / 48</strong><span class="review-count" id="reviewCount">錯題回航 0</span></div>
+          <div class="system-nav"><button id="previousSystem" type="button" aria-label="上一個星系">‹</button><div class="system-name"><small>STAR SYSTEM</small><b id="systemName">太陽系・啟航</b></div><button id="nextSystem" type="button" aria-label="下一個星系">›</button></div>
+          <div class="campaign-levels" id="campaignLevels"></div>
+          <p class="mission-note" id="missionNote">第 1 關・地球軌道｜26 波攻擊＋終點 Boss</p>
+        </section>
+
+        <h2>學習範圍</h2>
+        <p class="hint">康軒一般版，可複選冊別與課次；國字一律放進詞語或短句，另外穿插部首掃描。</p>
         <div class="book-options" id="bookOptions">
-          <div class="book-option"><input id="book1a" type="checkbox" value="1a" checked><label for="book1a"><span class="book-code">一上</span><span><span class="book-name">康軒小一上</span><span class="book-count">6 課・74 個生字</span></span><span class="book-check">✓</span></label></div>
-          <div class="book-option"><input id="book1b" type="checkbox" value="1b"><label for="book1b"><span class="book-code">一下</span><span><span class="book-name">康軒小一下</span><span class="book-count">12 課・188 個生字</span></span><span class="book-check">✓</span></label></div>
+          <div class="book-option"><input id="book1a" type="checkbox" value="1a"><label for="book1a"><span class="book-code">一上</span><span><span class="book-name">康軒小一上</span><span class="book-count">6 課・74 個生字</span></span><span class="book-check">✓</span></label></div>
+          <div class="book-option"><input id="book1b" type="checkbox" value="1b" checked><label for="book1b"><span class="book-code">一下</span><span><span class="book-name">康軒小一下</span><span class="book-count">12 課・188 個生字</span></span><span class="book-check">✓</span></label></div>
           <div class="book-option"><input id="book2a" type="checkbox" value="2a"><label for="book2a"><span class="book-code">二上</span><span><span class="book-name">康軒小二上</span><span class="book-count">12 課・180 個生字</span></span><span class="book-check">✓</span></label></div>
         </div>
 
@@ -532,7 +577,7 @@
           <div class="hud-logo"><span>字</span><b>字宙防衛隊</b></div>
           <div class="meter-wrap"><div class="meter-label"><span>戰機護盾</span><span id="hpText">100%</span></div><div class="meter"><div class="meter-fill" id="hpFill"></div></div></div>
         </div>
-        <div class="wave-box"><small id="stageText">地球軌道</small><strong><span id="waveText">01</span> / 15</strong></div>
+        <div class="wave-box"><small id="stageText">第 1 關・地球軌道</small><strong><span id="waveText">01</span> / <span id="waveTotal">26</span></strong></div>
         <div class="hud-right"><div class="score-pill"><small>SCORE</small><strong id="scoreText">0000</strong></div><button class="icon-button" id="soundButton" type="button" aria-label="關閉音效">🔊</button><button class="icon-button" id="quitButton" type="button" aria-label="離開任務">×</button></div>
       </header>
 
@@ -569,6 +614,7 @@
         <div class="battle-label">WEBGL 星海攔截戰・傾斜平板或拖曳視角</div>
         <div class="route-map" id="routeMap" aria-label="星際航線"></div>
         <div class="stage-banner" id="stageBanner" role="status"><span class="stage-planet" id="stagePlanet">🌍</span><small>NOW ENTERING</small><strong id="stageName">地球軌道</strong></div>
+        <div class="boss-ship" id="bossShip" aria-live="polite"><div class="boss-hull"></div><strong class="boss-name" id="bossName">地球守衛</strong><div class="boss-meter"><div class="boss-meter-fill" id="bossMeterFill"></div></div></div>
         <div class="camera-controls" aria-label="視角控制"><button class="camera-control camera-reset" id="cameraReset" type="button" aria-label="重設三維戰場視角">↻ 視角</button><button class="camera-control motion-toggle" id="motionToggle" type="button" aria-label="開啟平板陀螺儀控制">◉ 陀螺儀</button></div>
         <div class="damage-flash" id="damageFlash"></div>
         <div class="nuclear-flash" id="nuclearFlash" aria-hidden="true"></div>
@@ -596,7 +642,7 @@
     </section>
 
     <section class="screen result" id="resultScreen" hidden aria-labelledby="resultTitle">
-      <div class="result-card"><div class="result-badge" id="resultBadge">★</div><h2 id="resultTitle">任務完成！</h2><p id="resultMessage">文字星球安全了！</p><div class="stats"><div class="stat"><small>總分</small><strong id="finalScore">0</strong></div><div class="stat"><small>正確率</small><strong id="accuracy">0%</strong></div><div class="stat"><small>最高連擊</small><strong id="maxCombo">0</strong></div></div><div class="result-actions"><button class="back-button" id="backButton" type="button">重新設定</button><button class="retry-button" id="retryButton" type="button">再戰一次 ▶</button></div></div>
+      <div class="result-card"><div class="result-badge" id="resultBadge">★</div><h2 id="resultTitle">任務完成！</h2><p id="resultMessage">文字星球安全了！</p><div class="stats"><div class="stat"><small>任務分數</small><strong id="finalScore">0</strong></div><div class="stat"><small>正確率</small><strong id="accuracy">0%</strong></div><div class="stat"><small>最高連擊</small><strong id="maxCombo">0</strong></div></div><div class="result-actions"><button class="back-button" id="backButton" type="button">回到星圖</button><button class="retry-button" id="retryButton" type="button">下一關 ▶</button></div></div>
     </section>
   </main>
 
@@ -609,19 +655,26 @@
     // BOOKS and BOOK_INFO are defined in vocabulary.js.
 
     const LEVELS = {
-      easy: { speed: .82, name: "見習", hint: "敵機緩慢靠近，輕鬆作答" },
-      normal: { speed: 1.12, name: "王牌", hint: "速度適中，從容鎖定" },
-      hard: { speed: 1.52, name: "傳說", hint: "稍有壓力，仍有思考時間" }
+      easy: { speed: .48, name: "見習", hint: "敵機約 21 秒抵達，可以慢慢想" },
+      normal: { speed: .66, name: "王牌", hint: "敵機約 15 秒抵達，節奏適中" },
+      hard: { speed: .86, name: "傳說", hint: "敵機約 12 秒抵達，稍有挑戰" }
     };
-    const STAGES = Object.freeze([
-      { name: "地球軌道", planet: "🌍", sky: ["#061b38", "#0b3155", "#040c1b"], nebula: ["rgba(40,127,255,.58)", "rgba(55,224,255,.4)", "rgba(65,220,132,.28)"] },
-      { name: "月球航道", planet: "🌙", sky: ["#14172b", "#30334b", "#080914"], nebula: ["rgba(192,205,255,.42)", "rgba(116,135,190,.35)", "rgba(255,255,255,.18)"] },
-      { name: "火星軌道", planet: "🔴", sky: ["#2a0c14", "#54211c", "#12070b"], nebula: ["rgba(255,83,53,.55)", "rgba(255,155,63,.34)", "rgba(165,35,57,.34)"] },
-      { name: "木星雲海", planet: "🟠", sky: ["#241326", "#553452", "#100a18"], nebula: ["rgba(255,166,86,.5)", "rgba(184,103,255,.38)", "rgba(255,225,154,.27)"] },
-      { name: "土星環域", planet: "🪐", sky: ["#10182f", "#243b5a", "#070b18"], nebula: ["rgba(255,216,77,.48)", "rgba(101,233,255,.34)", "rgba(174,114,255,.3)"] }
+    const CAMPAIGN_SYSTEMS = Object.freeze([
+      { name: "太陽系・啟航", sky: ["#061b38", "#0b3155", "#040c1b"], nebula: ["rgba(40,127,255,.58)", "rgba(55,224,255,.4)", "rgba(65,220,132,.28)"], levels: [["🌍","地球軌道"],["🌙","月球前哨"],["🔴","火星峽谷"],["🟠","木星風暴"],["🪐","土星環帶"],["🔵","海王星暗流"]] },
+      { name: "古柏帶・冰境", sky: ["#10182f", "#203b55", "#070b18"], nebula: ["rgba(95,190,255,.5)", "rgba(195,230,255,.32)", "rgba(130,95,255,.3)"], levels: [["⚪","冥王星冰原"],["☄️","彗星急流"],["🧊","冰晶迷宮"],["💠","藍晶礦帶"],["🌑","暗月背面"],["🚪","日界星門"]] },
+      { name: "半人馬座・鄰星", sky: ["#230d24", "#4d1734", "#100713"], nebula: ["rgba(255,62,112,.5)", "rgba(255,150,68,.35)", "rgba(174,82,255,.3)"], levels: [["🔺","比鄰星哨站"],["🔥","赤焰行星"],["🌋","熔岩裂谷"],["🛰️","雙星雷達"],["🟥","紅矮星環"],["🌀","重力漩渦"]] },
+      { name: "天狼星・光海", sky: ["#071b2c", "#0b4e6b", "#03101b"], nebula: ["rgba(45,219,255,.55)", "rgba(83,132,255,.38)", "rgba(255,255,210,.24)"], levels: [["💎","天狼晶港"],["🌊","星光潮汐"],["🐋","銀河鯨道"],["⚡","閃電雲牆"],["🔷","藍巨星城"],["🌟","雙日王座"]] },
+      { name: "織女星・幻境", sky: ["#1b1038", "#3b286e", "#09051b"], nebula: ["rgba(174,90,255,.55)", "rgba(80,225,255,.34)", "rgba(255,86,206,.31)"], levels: [["🎇","織女光橋"],["🌸","星花庭園"],["🪞","鏡像月宮"],["🎵","音波星雲"],["🦋","幻蝶航道"],["👑","紫晶王城"]] },
+      { name: "獵戶座・巨獸", sky: ["#211107", "#532413", "#0e0805"], nebula: ["rgba(255,120,38,.55)", "rgba(255,220,80,.32)", "rgba(204,52,35,.32)"], levels: [["🏹","獵戶之弓"],["🐎","星馬荒原"],["🦁","金獅星丘"],["🐉","龍骨隧道"],["☀️","參宿四焰海"],["🏰","巨獸要塞"]] },
+      { name: "仙女座・遠征", sky: ["#170c2b", "#34205b", "#080413"], nebula: ["rgba(93,79,255,.58)", "rgba(255,86,197,.36)", "rgba(68,224,196,.28)"], levels: [["🌌","仙女星橋"],["🟣","紫霧行星"],["🛸","外星市集"],["🧿","千眼星陣"],["💫","時空瀑布"],["🕍","女王星宮"]] },
+      { name: "銀河之外・終章", sky: ["#050714", "#15183d", "#02030a"], nebula: ["rgba(58,103,255,.5)", "rgba(255,68,171,.38)", "rgba(255,213,77,.3)"], levels: [["♾️","無盡星海"],["🕳️","黑洞邊界"],["🧬","生命星種"],["⏳","時間迴廊"],["🌈","宇宙虹橋"],["🏆","字宙核心"]] }
     ]);
-    const WAVES_PER_STAGE = 3;
-    const TOTAL_WAVES = STAGES.length * WAVES_PER_STAGE;
+    const BOSS_TYPES = ["隕石鑽頭獸", "月影螳螂", "赤焰暴龍", "雷雲戰艦", "環帶巨蛇", "深空章魚", "鏡像魔王", "星核巨神"];
+    const STAGES = Object.freeze(CAMPAIGN_SYSTEMS.flatMap((system, systemIndex) => system.levels.map(([planet, name], localIndex) => ({ name, planet, sky: system.sky, nebula: system.nebula, systemIndex, localIndex, boss: `${name}・${BOSS_TYPES[(systemIndex * 6 + localIndex) % BOSS_TYPES.length]}` }))));
+    const REGULAR_WAVES = 22;
+    const BOSS_PHASES = 4;
+    const TOTAL_WAVES = REGULAR_WAVES + BOSS_PHASES;
+    const SAVE_KEY = "wordDefenseCampaignV2";
     const EQUIPMENT = Object.freeze({
       ion: { cost: 250, name: "離子干擾" },
       gravity: { cost: 300, name: "重力震盪彈" },
@@ -635,14 +688,23 @@
     const ALL_CURRICULUM_ITEMS = Object.values(BOOKS).flat();
     const CONFUSABLE_CHARS = new Set(CONFUSABLE_SETS.flat());
 
-    const state = { level: "easy", selectedBooks: ["1a"], selectedLessonKeys: new Set(), pool: [], question: null, score: 0, hp: 100, wave: 0, stageIndex: -1, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(), ownedPaints: new Set(["blue"]), paint: "blue", cameraYaw: 0, cameraPitch: 0, motionEnabled: false, motionBaseline: null };
+    function loadProgress() {
+      const fallback = { unlockedLevel: 0, cleared: {}, stars: {}, bestScores: {}, mistakes: {}, upgrades: [], ownedPaints: ["blue"], paint: "blue", settings: null };
+      try {
+        const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+        return saved && typeof saved === "object" ? { ...fallback, ...saved, mistakes: saved.mistakes || {}, cleared: saved.cleared || {}, stars: saved.stars || {}, bestScores: saved.bestScores || {} } : fallback;
+      } catch (_) { return fallback; }
+    }
+    const progress = loadProgress();
+    progress.unlockedLevel = Math.min(STAGES.length - 1, Math.max(0, Number(progress.unlockedLevel) || 0));
+    const state = { level: progress.settings?.level || "easy", selectedBooks: [], selectedLessonKeys: new Set(), selectedCampaignLevel: progress.unlockedLevel, displayedSystem: Math.floor(progress.unlockedLevel / 6), pool: [], question: null, recentQuestionIds: [], score: 0, hp: 100, wave: 0, stageIndex: -1, bossHP: BOSS_PHASES, bossActive: false, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(progress.upgrades || []), ownedPaints: new Set(progress.ownedPaints || ["blue"]), paint: progress.paint || "blue", cameraYaw: 0, cameraPitch: 0, motionEnabled: false, motionBaseline: null };
     const $ = (id) => document.getElementById(id);
     const els = {
       setup: $("setupScreen"), game: $("gameScreen"), result: $("resultScreen"), difficultyHint: $("difficultyHint"), start: $("startButton"), lessonOptions: $("lessonOptions"), toggleLessons: $("toggleLessonsButton"),
-      hpText: $("hpText"), hpFill: $("hpFill"), wave: $("waveText"), stageText: $("stageText"), score: $("scoreText"), battlefield: $("battlefield"), scene: $("spaceCamera"), cameraReset: $("cameraReset"), motionToggle: $("motionToggle"), fort: $("fort"), laser: $("laser"), damageFlash: $("damageFlash"),
-      questionIcon: $("questionIcon"), questionType: $("questionType"), questionText: $("questionText"), answers: $("answers"), pilot: $("pilotBubble"), combo: $("comboText"),
+      hpText: $("hpText"), hpFill: $("hpFill"), wave: $("waveText"), waveTotal: $("waveTotal"), stageText: $("stageText"), score: $("scoreText"), battlefield: $("battlefield"), scene: $("spaceCamera"), cameraReset: $("cameraReset"), motionToggle: $("motionToggle"), fort: $("fort"), laser: $("laser"), damageFlash: $("damageFlash"),
+      questionIcon: $("questionIcon"), questionType: $("questionType"), questionText: $("questionText"), questionTypeBox: document.querySelector(".question-type"), answers: $("answers"), pilot: $("pilotBubble"), combo: $("comboText"),
       equipment: [...document.querySelectorAll("[data-equipment]")], upgrades: [...document.querySelectorAll("[data-upgrade]")], paints: [...document.querySelectorAll("[data-paint]")], shopTabs: [...document.querySelectorAll("[data-shop-tab]")], shopPanels: [...document.querySelectorAll("[data-shop-panel]")], route: $("routeMap"), stageBanner: $("stageBanner"), stagePlanet: $("stagePlanet"), stageName: $("stageName"), nuclearFlash: $("nuclearFlash"), toast: $("toast"), sound: $("soundButton"), resultTitle: $("resultTitle"), resultMessage: $("resultMessage"), resultBadge: $("resultBadge"),
-      finalScore: $("finalScore"), accuracy: $("accuracy"), maxCombo: $("maxCombo")
+      finalScore: $("finalScore"), accuracy: $("accuracy"), maxCombo: $("maxCombo"), campaignProgress: $("campaignProgress"), reviewCount: $("reviewCount"), systemName: $("systemName"), campaignLevels: $("campaignLevels"), missionNote: $("missionNote"), previousSystem: $("previousSystem"), nextSystem: $("nextSystem"), bossShip: $("bossShip"), bossName: $("bossName"), bossMeterFill: $("bossMeterFill")
     };
     const spaceRenderer = window.SpaceRenderer ? new window.SpaceRenderer(els.battlefield, () => state) : null;
 
@@ -775,13 +837,49 @@
       spaceRenderer?.setLoadout(state.paint, state.upgrades);
     }
 
+    function saveProgress() {
+      progress.upgrades = [...state.upgrades];
+      progress.ownedPaints = [...state.ownedPaints];
+      progress.paint = state.paint;
+      progress.settings = { books: selectedBooks(), lessons: [...state.selectedLessonKeys], level: state.level };
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch (_) { /* Saving is optional in private browsing. */ }
+      renderCampaign();
+    }
+
+    function renderCampaign() {
+      state.displayedSystem = clamp(state.displayedSystem, 0, CAMPAIGN_SYSTEMS.length - 1);
+      const system = CAMPAIGN_SYSTEMS[state.displayedSystem];
+      const baseIndex = state.displayedSystem * 6;
+      els.systemName.textContent = system.name;
+      els.previousSystem.disabled = state.displayedSystem === 0;
+      els.nextSystem.disabled = state.displayedSystem === CAMPAIGN_SYSTEMS.length - 1;
+      els.campaignProgress.textContent = `已抵達 ${progress.unlockedLevel + 1} / ${STAGES.length}・完成 ${Object.keys(progress.cleared).length} 關`;
+      els.reviewCount.textContent = `錯題回航 ${Object.keys(progress.mistakes).length}`;
+      els.campaignLevels.innerHTML = system.levels.map(([planet, name], localIndex) => {
+        const index = baseIndex + localIndex;
+        const locked = index > progress.unlockedLevel;
+        const stars = progress.stars[index] || 0;
+        return `<button class="campaign-level${index === state.selectedCampaignLevel ? " selected" : ""}${progress.cleared[index] ? " cleared" : ""}" type="button" data-campaign-level="${index}" ${locked ? "disabled" : ""} aria-label="第 ${index + 1} 關 ${name}${locked ? "，尚未解鎖" : ""}"><span>${locked ? "🔒" : planet}</span><b>${index + 1}・${name}</b><small>${stars ? "★".repeat(stars) : locked ? "尚未抵達" : "等待出擊"}</small></button>`;
+      }).join("");
+      [...els.campaignLevels.querySelectorAll("[data-campaign-level]")].forEach((button) => button.addEventListener("click", () => {
+        state.selectedCampaignLevel = Number(button.dataset.campaignLevel);
+        renderCampaign(); tone(430, .06, "sine", .035);
+      }));
+      const selected = STAGES[state.selectedCampaignLevel];
+      els.missionNote.textContent = `第 ${state.selectedCampaignLevel + 1} 關・${selected.name}｜22 波攔截＋4 階段 Boss`;
+    }
+
     function applyStage(index) {
       const stage = STAGES[index];
       if (!stage) return;
       els.battlefield.style.setProperty("--sky-top", stage.sky[0]); els.battlefield.style.setProperty("--sky-mid", stage.sky[1]); els.battlefield.style.setProperty("--sky-bottom", stage.sky[2]);
       els.battlefield.style.setProperty("--sector-a", stage.nebula[0]); els.battlefield.style.setProperty("--sector-b", stage.nebula[1]); els.battlefield.style.setProperty("--sector-c", stage.nebula[2]);
-      els.stageText.textContent = stage.name; els.stagePlanet.textContent = stage.planet; els.stageName.textContent = stage.name;
-      els.route.innerHTML = STAGES.map((item, routeIndex) => `<span class="route-node${routeIndex < index ? " done" : routeIndex === index ? " active" : ""}"><span class="route-planet">${item.planet}</span><span>${item.name.replace("軌道", "").replace("航道", "")}</span></span>`).join("");
+      els.stageText.textContent = `第 ${index + 1} 關・${stage.name}`; els.stagePlanet.textContent = stage.planet; els.stageName.textContent = `第 ${index + 1} 關・${stage.name}`;
+      const systemStart = stage.systemIndex * 6;
+      els.route.innerHTML = STAGES.slice(systemStart, systemStart + 6).map((item, localIndex) => {
+        const routeIndex = systemStart + localIndex;
+        return `<span class="route-node${routeIndex < index ? " done" : routeIndex === index ? " active" : ""}"><span class="route-planet">${item.planet}</span><span>${item.name.replace("軌道", "").replace("航道", "")}</span></span>`;
+      }).join("");
       spaceRenderer?.setStage(index);
     }
 
@@ -826,38 +924,86 @@
       const pool = books.flatMap((book) => BOOKS[book].filter((item) => state.selectedLessonKeys.has(lessonKey(book, item.lesson))));
       if (!pool.length) { showStartWarning("請至少選擇一課"); return; }
       clearTimeout(state.freezeTimer); clearTimeout(state.stageTimer);
-      Object.assign(state, { selectedBooks: books, pool, score: 0, hp: 100, wave: 0, stageIndex: -1, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: true, locked: false, tick: performance.now(), freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(), ownedPaints: new Set(["blue"]), paint: "blue" });
-      els.battlefield.classList.remove("frozen");
+      Object.assign(state, { selectedBooks: books, pool, score: 0, hp: 100, wave: 0, stageIndex: state.selectedCampaignLevel, bossHP: BOSS_PHASES, bossActive: false, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: true, locked: false, tick: performance.now(), freezeUntil: 0, equipmentUsed: new Set(), recentQuestionIds: [] });
+      els.battlefield.classList.remove("frozen", "boss-mode");
       state.motionBaseline = null;
       setCamera(0, 0);
       selectShopTab("tactical"); applyLoadout();
-      showScreen(els.game); updateHUD(); nextQuestion(); requestAnimationFrame(gameLoop); tone(330, .08); setTimeout(() => tone(660, .15), 90);
+      saveProgress(); showScreen(els.game); applyStage(state.stageIndex); updateHUD(); nextQuestion(); requestAnimationFrame(gameLoop); tone(330, .08); setTimeout(() => tone(660, .15), 90);
+    }
+
+    function questionId(item, mode) { return `${item.book}:${item.lesson}:${item.char}:${mode}`; }
+
+    function chooseQuestionItem(mode, forcedItem = null) {
+      if (forcedItem) return { item: forcedItem, review: true };
+      const available = state.pool.filter((item) => !state.recentQuestionIds.includes(questionId(item, mode)));
+      const basePool = available.length ? available : state.pool;
+      const reviews = basePool.filter((item) => progress.mistakes[questionId(item, mode)]);
+      if (reviews.length && Math.random() < .52) return { item: reviews[Math.floor(Math.random() * reviews.length)], review: true };
+      const confusableItems = mode === "fill" ? basePool.filter((candidate) => CONFUSABLE_CHARS.has(candidate.char)) : [];
+      const itemPool = confusableItems.length && Math.random() < .58 ? confusableItems : basePool;
+      return { item: itemPool[Math.floor(Math.random() * itemPool.length)], review: false };
+    }
+
+    function dueReviewQuestion() {
+      if (state.wave % 4 !== 0) return null;
+      const recentlySeen = state.recentQuestionIds.slice(-2);
+      const candidates = state.pool.flatMap((item) => ["fill", "radical"].map((mode) => ({ item, mode, id: questionId(item, mode) })))
+        .filter((candidate) => progress.mistakes[candidate.id] && !recentlySeen.includes(candidate.id))
+        .sort((a, b) => (progress.mistakes[a.id].lastMissed || 0) - (progress.mistakes[b.id].lastMissed || 0));
+      return candidates[0] || null;
+    }
+
+    function contextsFor(item) {
+      const examContexts = EXAM_FILL_CONTEXTS[item.char];
+      if (examContexts?.length) return examContexts;
+      const ordinary = FILL_CONTEXTS[item.char];
+      return ordinary ? [ordinary] : [item.word || item.title];
     }
 
     function nextQuestion() {
       if (!state.running) return;
       clearTimeout(state.freezeTimer); state.freezeUntil = 0; state.equipmentUsed = new Set(); els.battlefield.classList.remove("frozen");
       state.wave += 1; state.position = 0; state.locked = false;
-      const nextStageIndex = Math.min(STAGES.length - 1, Math.floor((state.wave - 1) / WAVES_PER_STAGE));
-      const enteringStage = nextStageIndex !== state.stageIndex;
-      state.stageIndex = nextStageIndex; applyStage(nextStageIndex);
-      const modes = ["fill", "fill", "zhuyin", "radical"];
-      const mode = modes[Math.floor(Math.random() * modes.length)];
-      const confusableItems = mode === "fill" ? state.pool.filter((candidate) => CONFUSABLE_CHARS.has(candidate.char)) : [];
-      const itemPool = confusableItems.length && Math.random() < .65 ? confusableItems : state.pool;
-      const item = itemPool[Math.floor(Math.random() * itemPool.length)];
-      const field = { fill: "char", zhuyin: "bopomofo", radical: "radical" }[mode];
+      const enteringBoss = state.wave === REGULAR_WAVES + 1;
+      state.bossActive = state.wave > REGULAR_WAVES;
+      els.battlefield.classList.toggle("boss-mode", state.bossActive);
+      const dueReview = dueReviewQuestion();
+      const mode = dueReview?.mode || (state.bossActive || Math.random() < .78 ? "fill" : "radical");
+      const { item, review } = chooseQuestionItem(mode, dueReview?.item);
+      const field = mode === "fill" ? "char" : "radical";
       const answer = item[field];
       const options = buildQuestionOptions(item, mode, field);
-      state.question = { item, mode, answer, options };
-      els.questionIcon.textContent = { fill: "填", zhuyin: "音", radical: "部" }[mode];
-      els.questionType.textContent = { fill: "語境填字", zhuyin: "選注音", radical: "選部首" }[mode];
-      renderQuestionText(item, mode);
+      const contexts = mode === "fill" ? contextsFor(item) : [];
+      const context = contexts.length ? contexts[Math.floor(Math.random() * contexts.length)] : "";
+      const id = questionId(item, mode);
+      state.recentQuestionIds.push(id); state.recentQuestionIds = state.recentQuestionIds.slice(-6);
+      state.question = { item, mode, answer, options, context, id, review, mistakeRecorded: false };
+      els.questionIcon.textContent = state.bossActive ? "王" : review ? "追" : mode === "fill" ? "填" : "部";
+      els.questionType.textContent = state.bossActive ? "BOSS 核心" : review ? "錯題回航" : mode === "fill" ? "詞語攔截" : "部首掃描";
+      els.questionTypeBox.classList.toggle("review", review);
+      renderQuestionText(item, mode, context);
       els.answers.innerHTML = options.map((option, index) => `<button class="enemy-unit" type="button" data-value="${option}" data-key="${index + 1}" data-spawn="${index}" aria-label="敵機答案 ${option}"><span class="enemy-trail" aria-hidden="true"></span><span class="enemy-mech" aria-hidden="true"></span><span class="enemy-answer">${option}</span><span class="enemy-key" aria-hidden="true">${index + 1}</span></button>`).join("");
       [...els.answers.children].forEach((button) => button.addEventListener("click", () => chooseAnswer(button)));
-      els.pilot.textContent = state.wave === TOTAL_WAVES ? "土星最終戰！直接點擊正確敵機！" : { fill: "看懂句子，選出最適合的國字！", zhuyin: "找出正確注音，發射光束！", radical: "掃描敵機上的正確部首！" }[mode];
+      els.pilot.textContent = state.bossActive ? `破解核心！還要命中 ${state.bossHP} 次！` : review ? "這題以前錯過，這次把它擊破！" : mode === "fill" ? "看懂短句，擊落帶著正確國字的敵機！" : "掃描國字，鎖定正確部首！";
+      updateBossHUD();
       updateEnemies(); updateHUD();
-      if (enteringStage) showStageTransition(nextStageIndex);
+      if (state.wave === 1) showStageTransition(state.stageIndex);
+      if (enteringBoss) showBossTransition();
+    }
+
+    function showBossTransition() {
+      state.locked = true;
+      els.bossName.textContent = STAGES[state.stageIndex].boss;
+      showToast("⚠ BOSS 躍遷進場！四次命中才能擊破");
+      [110, 82, 55].forEach((frequency, index) => setTimeout(() => tone(frequency, .5, "sawtooth", .065), index * 150));
+      clearTimeout(state.stageTimer);
+      state.stageTimer = setTimeout(() => { if (state.running && state.bossActive) { state.locked = false; updateHUD(); } }, 1450);
+    }
+
+    function updateBossHUD() {
+      els.bossName.textContent = STAGES[state.stageIndex]?.boss || "字宙巨獸";
+      els.bossMeterFill.style.width = `${state.bossHP / BOSS_PHASES * 100}%`;
     }
 
     function buildQuestionOptions(item, mode, field) {
@@ -873,13 +1019,13 @@
       return shuffle([answer, ...wrong.slice(0, 3)]);
     }
 
-    function renderQuestionText(item, mode) {
+    function renderQuestionText(item, mode, suppliedContext = "") {
       if (mode !== "fill") {
-        els.questionText.textContent = mode === "zhuyin" ? `「${item.char}」的注音是？` : `「${item.char}」的部首是？`;
+        els.questionText.textContent = `「${item.char}」的部首是？`;
         els.questionText.removeAttribute("aria-label");
         return;
       }
-      const context = FILL_CONTEXTS[item.char] || item.word || item.title;
+      const context = suppliedContext || contextsFor(item)[0];
       const markerIndex = context.indexOf("＿");
       const targetIndex = context.indexOf(item.char);
       const before = markerIndex >= 0 ? context.slice(0, markerIndex) : targetIndex >= 0 ? context.slice(0, targetIndex) : "";
@@ -901,20 +1047,38 @@
       const correct = button.dataset.value === state.question.answer;
       if (correct) {
         button.classList.add("correct"); state.correct += 1; state.combo += 1; state.maxCombo = Math.max(state.maxCombo, state.combo);
+        rememberCorrectAnswer();
+        if (state.bossActive) { state.bossHP = Math.max(0, state.bossHP - 1); updateBossHUD(); els.bossShip.classList.remove("shake"); void els.bossShip.offsetWidth; els.bossShip.classList.add("shake"); }
         const weaponBonus = state.upgrades.has("twin") ? 50 : 0;
         state.score += 100 + Math.min(400, state.combo * 20) + Math.round((100 - state.position) * 2) + weaponBonus;
-        els.pilot.textContent = weaponBonus ? "雙聯光束命中！裝備加成 +50！" : ["鎖定成功！敵機擊破！", "文字能量全開！", "命中核心，漂亮！"][Math.floor(Math.random() * 3)];
+        els.pilot.textContent = state.bossActive ? (state.bossHP ? `核心受損！還剩 ${state.bossHP} 層護盾！` : "核心崩解！BOSS 擊破！") : weaponBonus ? "雙聯光束命中！裝備加成 +50！" : ["鎖定成功！敵機擊破！", "文字能量全開！", "命中核心，漂亮！"][Math.floor(Math.random() * 3)];
         [...els.answers.children].filter((enemy) => enemy !== button).forEach((enemy) => enemy.classList.add("retreat")); fireAt(button); createBurst(button);
         tone(520, .08, "square", .04); setTimeout(() => tone(790, .14, "sine", .05), 65);
         if (state.combo >= 2) { els.combo.querySelector("span").textContent = state.combo; els.combo.classList.add("show"); }
-        setTimeout(() => { if (state.wave >= TOTAL_WAVES) finishGame(true); else nextQuestion(); }, 720);
+        setTimeout(() => { if (state.bossActive && state.bossHP <= 0) finishGame(true); else nextQuestion(); }, state.bossActive ? 920 : 720);
       } else {
+        rememberWrongAnswer();
         button.classList.remove("wrong"); void button.offsetWidth; button.classList.add("wrong"); state.combo = 0; state.position = Math.min(96, state.position + 10); els.combo.classList.remove("show");
-        els.pilot.textContent = "警告：敵軍加速逼近！再鎖定一次！";
+        els.pilot.textContent = "已把這題收進錯題雷達！再鎖定一次！";
         tone(120, .18, "sawtooth", .055);
         setTimeout(() => { button.classList.remove("wrong"); state.locked = false; }, 480);
       }
       updateHUD(); updateEnemies();
+    }
+
+    function rememberWrongAnswer() {
+      if (state.question.mistakeRecorded) return;
+      const previous = progress.mistakes[state.question.id] || { misses: 0, correctStreak: 0 };
+      progress.mistakes[state.question.id] = { misses: previous.misses + 1, correctStreak: 0, lastMissed: Date.now() };
+      state.question.mistakeRecorded = true; state.question.review = true; saveProgress();
+    }
+
+    function rememberCorrectAnswer() {
+      const previous = progress.mistakes[state.question.id];
+      if (!previous) return;
+      previous.correctStreak = (previous.correctStreak || 0) + 1;
+      if (previous.correctStreak >= 2) delete progress.mistakes[state.question.id];
+      saveProgress();
     }
 
     function useEquipment(type) {
@@ -946,12 +1110,13 @@
         [330, 440, 660].forEach((frequency, index) => setTimeout(() => tone(frequency, .18, "sine", .04), index * 80));
       } else {
         state.locked = true;
-        els.pilot.textContent = "星核彈發射——本波敵軍全數消滅！";
+        if (state.bossActive) { state.bossHP = Math.max(0, state.bossHP - 1); updateBossHUD(); }
+        els.pilot.textContent = state.bossActive ? `星核彈命中核心！還剩 ${state.bossHP} 層護盾！` : "星核彈發射——本波敵軍全數消滅！";
         [...els.answers.children].forEach((enemy, index) => { setTimeout(() => { enemy.classList.add("nuclear-hit"); createBurst(enemy); }, index * 55); });
         els.nuclearFlash.classList.remove("fire"); void els.nuclearFlash.offsetWidth; els.nuclearFlash.classList.add("fire");
-        showToast("☢ 星核彈清除本波（不計作答）");
+        showToast(state.bossActive ? "☢ 星核彈削除一層 Boss 護盾" : "☢ 星核彈清除本波（不計作答）");
         [110, 85, 55].forEach((frequency, index) => setTimeout(() => tone(frequency, .42, "sawtooth", .075), index * 115));
-        setTimeout(() => { if (state.wave >= TOTAL_WAVES) finishGame(true); else nextQuestion(); }, 950);
+        setTimeout(() => { if (state.bossActive && state.bossHP <= 0) finishGame(true); else nextQuestion(); }, 950);
       }
       updateHUD();
     }
@@ -962,7 +1127,7 @@
       state.score -= upgrade.cost; state.upgrades.add(type); applyLoadout();
       showToast(type === "twin" ? "🔫 雙聯光束炮已裝配：答對 +50 分" : "⬡ 蜂巢裝甲已裝配：撞擊傷害減半");
       els.pilot.textContent = type === "twin" ? "新武器連線完成！機翼已加裝雙炮！" : "裝甲展開！戰機周圍出現蜂巢護盾！";
-      tone(420, .14, "square", .04); setTimeout(() => tone(720, .2, "sine", .05), 100); updateHUD();
+      tone(420, .14, "square", .04); setTimeout(() => tone(720, .2, "sine", .05), 100); saveProgress(); updateHUD();
     }
 
     function choosePaint(type) {
@@ -972,7 +1137,7 @@
         if (state.score < paint.cost) return;
         state.score -= paint.cost; state.ownedPaints.add(type);
       }
-      state.paint = type; applyLoadout(); showToast(`🎨 已換裝：${paint.name}`); tone(560, .12, "sine", .04); updateHUD();
+      state.paint = type; applyLoadout(); showToast(`🎨 已換裝：${paint.name}`); tone(560, .12, "sine", .04); saveProgress(); updateHUD();
     }
 
     function gameLoop(now) {
@@ -995,7 +1160,8 @@
       const fieldWidth = els.battlefield.clientWidth;
       const playWidth = innerWidth > 540 ? Math.max(360, fieldWidth - 178) : fieldWidth;
       [...els.answers.children].forEach((enemy, index) => {
-        const spawn = SPAWNS[Number(enemy.dataset.spawn) || index];
+        const bossSpawns = [{ x: 13, y: 31 }, { x: 36, y: 27 }, { x: 64, y: 27 }, { x: 87, y: 31 }];
+        const spawn = (state.bossActive ? bossSpawns : SPAWNS)[Number(enemy.dataset.spawn) || index];
         const startX = playWidth * spawn.x / 100;
         const targetX = playWidth * (47 + index * 2) / 100;
         const curve = Math.sin(progress * Math.PI) * playWidth * (index < 2 ? -.04 : .04);
@@ -1036,7 +1202,7 @@
     }
 
     function updateHUD() {
-      els.hpText.textContent = `${state.hp}%`; els.hpFill.style.width = `${state.hp}%`; els.wave.textContent = String(Math.min(state.wave, TOTAL_WAVES)).padStart(2, "0"); els.score.textContent = String(state.score).padStart(4, "0");
+      els.hpText.textContent = `${state.hp}%`; els.hpFill.style.width = `${state.hp}%`; els.wave.textContent = String(Math.min(state.wave, TOTAL_WAVES)).padStart(2, "0"); els.waveTotal.textContent = String(TOTAL_WAVES); els.score.textContent = String(state.score).padStart(4, "0");
       els.equipment.forEach((button) => {
         const gear = EQUIPMENT[button.dataset.equipment];
         const used = state.equipmentUsed.has(button.dataset.equipment);
@@ -1061,7 +1227,22 @@
     function finishGame(victory) {
       state.running = false; state.locked = true; clearTimeout(state.freezeTimer); clearTimeout(state.stageTimer); showScreen(els.result);
       const accuracy = state.answered ? Math.round(state.correct / state.answered * 100) : 0;
-      els.resultTitle.textContent = victory ? "土星航線完成！" : "戰機待修復"; els.resultMessage.textContent = victory ? (accuracy >= 90 ? "從地球一路飛到土星，你是文字王牌！" : "五大行星航道都安全了，做得好！") : "沒關係，重新出動就會更強！"; els.resultBadge.textContent = victory ? (accuracy >= 90 ? "冠" : "★") : "修";
+      const completedIndex = state.selectedCampaignLevel;
+      const completedStage = STAGES[completedIndex];
+      if (victory) {
+        const stars = accuracy >= 92 ? 3 : accuracy >= 78 ? 2 : 1;
+        progress.cleared[completedIndex] = true;
+        progress.stars[completedIndex] = Math.max(progress.stars[completedIndex] || 0, stars);
+        progress.bestScores[completedIndex] = Math.max(progress.bestScores[completedIndex] || 0, state.score);
+        progress.unlockedLevel = Math.max(progress.unlockedLevel, Math.min(STAGES.length - 1, completedIndex + 1));
+        if (completedIndex < STAGES.length - 1) state.selectedCampaignLevel = completedIndex + 1;
+        state.displayedSystem = Math.floor(state.selectedCampaignLevel / 6);
+      }
+      saveProgress();
+      els.resultTitle.textContent = victory ? `${completedStage.name}解放！` : "戰機待修復";
+      els.resultMessage.textContent = victory ? (completedIndex === STAGES.length - 1 ? "48 個關卡全數完成，字宙恢復和平！" : `航線已存檔。雷達裡還有 ${Object.keys(progress.mistakes).length} 題會在之後再次出現。`) : "沒關係，修好戰機再挑戰同一關！";
+      els.resultBadge.textContent = victory ? (accuracy >= 92 ? "冠" : "★") : "修";
+      $("retryButton").textContent = victory && completedIndex < STAGES.length - 1 ? "下一關 ▶" : "重新挑戰 ▶";
       els.finalScore.textContent = state.score; els.accuracy.textContent = `${accuracy}%`; els.maxCombo.textContent = state.maxCombo;
       const best = Math.max(Number(localStorage.getItem("wordDefenseBest") || 0), state.score); localStorage.setItem("wordDefenseBest", String(best));
       tone(victory ? 660 : 140, .25, victory ? "sine" : "sawtooth", .06);
@@ -1069,8 +1250,14 @@
 
     function showToast(message) { clearTimeout(state.toastTimer); els.toast.textContent = message; els.toast.classList.add("show"); state.toastTimer = setTimeout(() => els.toast.classList.remove("show"), 1500); }
 
+    const restoredSettings = Boolean(progress.settings?.books?.length);
+    if (restoredSettings) {
+      document.querySelectorAll(".book-option input").forEach((input) => { input.checked = progress.settings.books.includes(input.value); });
+      state.selectedLessonKeys = new Set(progress.settings.lessons || []);
+    }
+
     document.querySelectorAll(".book-option input").forEach((input) => {
-      if (input.checked) for (let lesson = 1; lesson <= BOOK_INFO[input.value].lessons; lesson++) state.selectedLessonKeys.add(lessonKey(input.value, lesson));
+      if (!restoredSettings && input.checked) for (let lesson = 1; lesson <= BOOK_INFO[input.value].lessons; lesson++) state.selectedLessonKeys.add(lessonKey(input.value, lesson));
       input.addEventListener("change", () => {
         for (let lesson = 1; lesson <= BOOK_INFO[input.value].lessons; lesson++) {
           const key = lessonKey(input.value, lesson);
@@ -1086,10 +1273,15 @@
       renderLessonOptions(); tone(320, .05);
     });
     renderLessonOptions();
+    renderCampaign();
 
     document.querySelectorAll(".difficulty button").forEach((button) => button.addEventListener("click", () => {
       document.querySelectorAll(".difficulty button").forEach((item) => item.classList.remove("active")); button.classList.add("active"); state.level = button.dataset.level; els.difficultyHint.textContent = LEVELS[state.level].hint; tone(260, .05);
     }));
+    document.querySelectorAll(".difficulty button").forEach((button) => button.classList.toggle("active", button.dataset.level === state.level));
+    els.difficultyHint.textContent = LEVELS[state.level].hint;
+    els.previousSystem.addEventListener("click", () => { state.displayedSystem -= 1; renderCampaign(); tone(300, .05); });
+    els.nextSystem.addEventListener("click", () => { state.displayedSystem += 1; renderCampaign(); tone(360, .05); });
     els.start.addEventListener("click", startGame);
     els.equipment.forEach((button) => button.addEventListener("click", () => useEquipment(button.dataset.equipment)));
     els.upgrades.forEach((button) => button.addEventListener("click", () => buyUpgrade(button.dataset.upgrade)));
@@ -1102,13 +1294,13 @@
     els.cameraReset.addEventListener("click", resetCamera);
     els.motionToggle.addEventListener("click", toggleMotionControl);
     $("soundButton").addEventListener("click", () => { state.muted = !state.muted; els.sound.textContent = state.muted ? "🔇" : "🔊"; els.sound.setAttribute("aria-label", state.muted ? "開啟音效" : "關閉音效"); if (!state.muted) tone(440); });
-    $("quitButton").addEventListener("click", () => { state.running = false; showScreen(els.setup); });
-    $("backButton").addEventListener("click", () => showScreen(els.setup));
+    $("quitButton").addEventListener("click", () => { state.running = false; saveProgress(); renderCampaign(); showScreen(els.setup); });
+    $("backButton").addEventListener("click", () => { renderCampaign(); showScreen(els.setup); });
     $("retryButton").addEventListener("click", startGame);
     document.addEventListener("keydown", (event) => { const key = Number(event.key); if (key >= 1 && key <= 4 && els.answers.children[key - 1]) els.answers.children[key - 1].click(); });
 
     // Minimal public surface for automated smoke tests.
-    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, TOTAL_WAVES, EQUIPMENT, UPGRADES, PAINTS, CONFUSABLE_SETS, FILL_CONTEXTS, CAMERA_LIMITS, state, webgl: spaceRenderer, startGame, finishGame, renderLessonOptions, renderQuestionText, buildQuestionOptions, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera, resetCamera, toggleMotionControl, handleDeviceOrientation };
+    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, CAMPAIGN_SYSTEMS, TOTAL_WAVES, REGULAR_WAVES, BOSS_PHASES, EQUIPMENT, UPGRADES, PAINTS, CONFUSABLE_SETS, FILL_CONTEXTS, EXAM_FILL_CONTEXTS, CAMERA_LIMITS, progress, state, webgl: spaceRenderer, startGame, nextQuestion, finishGame, renderCampaign, renderLessonOptions, renderQuestionText, buildQuestionOptions, questionId, chooseQuestionItem, rememberWrongAnswer, rememberCorrectAnswer, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera, resetCamera, toggleMotionControl, handleDeviceOrientation };
   </script>
 </body>
 </html>

@@ -52,6 +52,9 @@
         this.tracked.add(drone);
         return drone;
       });
+      this.boss = this.createBossShip();
+      this.boss.visible = false;
+      this.tracked.add(this.boss);
 
       this.resizeObserver = new ResizeObserver(() => this.resize());
       this.resizeObserver.observe(field);
@@ -191,14 +194,35 @@
       return group;
     }
 
+    createBossShip() {
+      const group = new THREE.Group();
+      const armor = new THREE.MeshStandardMaterial({ color: 0x7724b8, emissive: 0x6f159f, emissiveIntensity: 1.1, metalness: .78, roughness: .22 });
+      const dark = new THREE.MeshStandardMaterial({ color: 0x12091f, metalness: .9, roughness: .18 });
+      const core = new THREE.MeshBasicMaterial({ color: 0xff527d });
+      const hull = new THREE.Mesh(new THREE.IcosahedronGeometry(.85, 1), armor);
+      hull.scale.set(1.65, .78, .72); group.add(hull);
+      [-1, 1].forEach((side) => {
+        const wing = new THREE.Mesh(new THREE.ConeGeometry(.52, 2.5, 4), dark);
+        wing.rotation.z = side * 1.2; wing.position.x = side * 1.25; group.add(wing);
+        const cannon = new THREE.Mesh(new THREE.CylinderGeometry(.13, .2, 1.45, 8), armor);
+        cannon.position.set(side * 1.55, -.45, .2); group.add(cannon);
+      });
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(.3, 18, 12), core);
+      eye.position.z = .72; group.add(eye);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, .08, 8, 64), new THREE.MeshBasicMaterial({ color: 0xee9cff, transparent: true, opacity: .72, blending: THREE.AdditiveBlending }));
+      ring.rotation.x = .85; group.add(ring); group.userData.ring = ring;
+      return group;
+    }
+
     setStage(index) {
       this.stageIndex = index;
-      const colors = [0x2878df, 0xa8b2cc, 0xc94b28, 0xd78d52, 0xe2c46b];
-      const emissives = [0x082553, 0x252a3c, 0x52160d, 0x55301c, 0x514316];
-      this.planetMaterial.color.setHex(colors[index] || colors[0]);
-      this.planetMaterial.emissive.setHex(emissives[index] || emissives[0]);
-      this.planetRing.visible = index === 4 || index === 0;
-      this.planetRing.material.color.setHex(index === 4 ? 0xffdc78 : 0x8feaff);
+      const colors = [0x2878df, 0xa8b2cc, 0xc94b28, 0xd78d52, 0xe2c46b, 0x315ac7, 0x8c4fe0, 0xf078b9];
+      const emissives = [0x082553, 0x252a3c, 0x52160d, 0x55301c, 0x514316, 0x17255f, 0x391465, 0x5c173f];
+      const paletteIndex = index % colors.length;
+      this.planetMaterial.color.setHex(colors[paletteIndex]);
+      this.planetMaterial.emissive.setHex(emissives[paletteIndex]);
+      this.planetRing.visible = index % 6 === 4 || index % 6 === 0;
+      this.planetRing.material.color.setHex(index % 6 === 4 ? 0xffdc78 : 0x8feaff);
     }
 
     setLoadout(paint, upgrades) {
@@ -259,6 +283,20 @@
         drone.rotation.x = Math.sin(time * .002 + drone.userData.phase) * .18;
         drone.rotation.z = Math.sin(time * .0017 + drone.userData.phase) * .14;
       });
+
+      const bossElement = document.getElementById("bossShip");
+      if (bossElement && bossElement.offsetParent !== null && this.getState().bossActive) {
+        this.boss.visible = true;
+        this.boss.position.copy(this.elementToWorld(bossElement, .35));
+        this.boss.position.y += .35;
+        const widthScale = bossElement.getBoundingClientRect().width / 240;
+        this.boss.scale.setScalar(.52 * widthScale);
+        this.boss.rotation.y = Math.sin(time * .0011) * .2;
+        this.boss.rotation.x = Math.sin(time * .0017) * .08;
+        this.boss.userData.ring.rotation.z = time * .0012;
+      } else {
+        this.boss.visible = false;
+      }
     }
 
     animate(now) {
