@@ -534,7 +534,7 @@
           <div class="combo" id="comboText"><span>3</span> COMBO<small>連續命中</small></div>
           <div class="enemies" id="answers" aria-label="來襲敵機"></div>
           <div class="question-beacon" aria-live="polite">
-            <div class="question-shell"><div class="question-type"><span id="questionIcon">字</span><b id="questionType">選國字</b></div><div class="question-text" id="questionText">雷達掃描中……</div></div>
+            <div class="question-shell"><div class="question-type"><span id="questionIcon">填</span><b id="questionType">語境填字</b></div><div class="question-text" id="questionText">雷達掃描中……</div></div>
             <div class="pilot-bubble" id="pilotBubble">敵機身上就是答案，直接點擊攻擊！</div>
           </div>
           <div class="player-craft" id="fort">
@@ -621,6 +621,8 @@
     const UPGRADES = Object.freeze({ twin: { cost: 500, name: "雙聯光束炮" }, shield: { cost: 550, name: "蜂巢裝甲" } });
     const PAINTS = Object.freeze({ blue: { cost: 0, name: "星海藍" }, red: { cost: 200, name: "烈焰紅" }, gold: { cost: 300, name: "太陽金" }, purple: { cost: 300, name: "星雲紫" } });
     const SPAWNS = [{ x: 10, y: 13 }, { x: 36, y: 5 }, { x: 64, y: 5 }, { x: 90, y: 13 }];
+    const ALL_CURRICULUM_ITEMS = Object.values(BOOKS).flat();
+    const CONFUSABLE_CHARS = new Set(CONFUSABLE_SETS.flat());
 
     const state = { level: "easy", selectedBooks: ["1a"], selectedLessonKeys: new Set(), pool: [], question: null, score: 0, hp: 100, wave: 0, stageIndex: -1, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(), ownedPaints: new Set(["blue"]), paint: "blue", cameraYaw: 0, cameraPitch: 0 };
     const $ = (id) => document.getElementById(id);
@@ -764,39 +766,49 @@
       const nextStageIndex = Math.min(STAGES.length - 1, Math.floor((state.wave - 1) / WAVES_PER_STAGE));
       const enteringStage = nextStageIndex !== state.stageIndex;
       state.stageIndex = nextStageIndex; applyStage(nextStageIndex);
-      const item = state.pool[Math.floor(Math.random() * state.pool.length)];
-      const modes = ["character", "zhuyin", "radical", ...(item.word ? ["word"] : [])];
+      const modes = ["fill", "fill", "zhuyin", "radical"];
       const mode = modes[Math.floor(Math.random() * modes.length)];
-      const field = { character: "char", zhuyin: "bopomofo", radical: "radical", word: "char" }[mode];
+      const confusableItems = mode === "fill" ? state.pool.filter((candidate) => CONFUSABLE_CHARS.has(candidate.char)) : [];
+      const itemPool = confusableItems.length && Math.random() < .65 ? confusableItems : state.pool;
+      const item = itemPool[Math.floor(Math.random() * itemPool.length)];
+      const field = { fill: "char", zhuyin: "bopomofo", radical: "radical" }[mode];
       const answer = item[field];
-      const candidates = shuffle([...state.pool, ...Object.values(BOOKS).flat()].filter((candidate) => candidate[field] !== answer));
-      const wrong = [];
-      for (const candidate of candidates) {
-        const value = candidate[field];
-        if (!wrong.includes(value)) wrong.push(value);
-        if (wrong.length === 3) break;
-      }
-      const options = shuffle([answer, ...wrong]);
+      const options = buildQuestionOptions(item, mode, field);
       state.question = { item, mode, answer, options };
-      els.questionIcon.textContent = { character: "字", zhuyin: "音", radical: "部", word: "詞" }[mode];
-      els.questionType.textContent = { character: "選國字", zhuyin: "選注音", radical: "選部首", word: "詞語填空" }[mode];
+      els.questionIcon.textContent = { fill: "填", zhuyin: "音", radical: "部" }[mode];
+      els.questionType.textContent = { fill: "語境填字", zhuyin: "選注音", radical: "選部首" }[mode];
       renderQuestionText(item, mode);
       els.answers.innerHTML = options.map((option, index) => `<button class="enemy-unit" type="button" data-value="${option}" data-key="${index + 1}" data-spawn="${index}" aria-label="敵機答案 ${option}"><span class="enemy-trail" aria-hidden="true"></span><span class="enemy-mech" aria-hidden="true"></span><span class="enemy-answer">${option}</span><span class="enemy-key" aria-hidden="true">${index + 1}</span></button>`).join("");
       [...els.answers.children].forEach((button) => button.addEventListener("click", () => chooseAnswer(button)));
-      els.pilot.textContent = state.wave === TOTAL_WAVES ? "土星最終戰！直接點擊正確敵機！" : { character: "鎖定帶著正確國字的敵機！", zhuyin: "找出正確注音，發射光束！", radical: "掃描敵機上的正確部首！", word: "補上詞語缺字，擊破敵機！" }[mode];
+      els.pilot.textContent = state.wave === TOTAL_WAVES ? "土星最終戰！直接點擊正確敵機！" : { fill: "看懂句子，選出最適合的國字！", zhuyin: "找出正確注音，發射光束！", radical: "掃描敵機上的正確部首！" }[mode];
       updateEnemies(); updateHUD();
       if (enteringStage) showStageTransition(nextStageIndex);
     }
 
+    function buildQuestionOptions(item, mode, field) {
+      const answer = item[field];
+      const wrong = [];
+      const add = (value) => { if (value && value !== answer && !wrong.includes(value)) wrong.push(value); };
+      if (mode === "fill") {
+        const confusableSet = CONFUSABLE_SETS.find((set) => set.includes(item.char));
+        if (confusableSet) shuffle(confusableSet).forEach(add);
+        shuffle(ALL_CURRICULUM_ITEMS.filter((candidate) => candidate.bopomofo === item.bopomofo)).forEach((candidate) => add(candidate.char));
+      }
+      shuffle([...state.pool, ...ALL_CURRICULUM_ITEMS]).forEach((candidate) => add(candidate[field]));
+      return shuffle([answer, ...wrong.slice(0, 3)]);
+    }
+
     function renderQuestionText(item, mode) {
-      if (mode !== "word") {
-        els.questionText.textContent = mode === "character" ? `「${item.bopomofo}」是哪一個國字？` : mode === "zhuyin" ? `「${item.char}」的注音是？` : `「${item.char}」的部首是？`;
+      if (mode !== "fill") {
+        els.questionText.textContent = mode === "zhuyin" ? `「${item.char}」的注音是？` : `「${item.char}」的部首是？`;
         els.questionText.removeAttribute("aria-label");
         return;
       }
-      const targetIndex = item.word.indexOf(item.char);
-      const before = targetIndex < 0 ? "" : item.word.slice(0, targetIndex);
-      const after = targetIndex < 0 ? item.word : item.word.slice(targetIndex + item.char.length);
+      const context = FILL_CONTEXTS[item.char] || item.word || item.title;
+      const markerIndex = context.indexOf("＿");
+      const targetIndex = context.indexOf(item.char);
+      const before = markerIndex >= 0 ? context.slice(0, markerIndex) : targetIndex >= 0 ? context.slice(0, targetIndex) : "";
+      const after = markerIndex >= 0 ? context.slice(markerIndex + 1) : targetIndex >= 0 ? context.slice(targetIndex + item.char.length) : context;
       const ruby = document.createElement("ruby");
       ruby.className = "word-blank";
       const blank = document.createElement("span");
@@ -804,8 +816,8 @@
       const reading = document.createElement("rt");
       reading.textContent = item.bopomofo;
       ruby.append(blank, reading);
-      els.questionText.replaceChildren(document.createTextNode(`「${before}`), ruby, document.createTextNode(`${after}」缺少哪個字？`));
-      els.questionText.setAttribute("aria-label", `「${before}空格，注音${item.bopomofo}${after}」缺少哪個字？`);
+      els.questionText.replaceChildren(document.createTextNode(`「${before}`), ruby, document.createTextNode(`${after}」該填哪個字？`));
+      els.questionText.setAttribute("aria-label", `「${before}空格，注音${item.bopomofo}${after}」該填哪個字？`);
     }
 
     function chooseAnswer(button) {
@@ -1020,7 +1032,7 @@
     document.addEventListener("keydown", (event) => { const key = Number(event.key); if (key >= 1 && key <= 4 && els.answers.children[key - 1]) els.answers.children[key - 1].click(); });
 
     // Minimal public surface for automated smoke tests.
-    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, TOTAL_WAVES, EQUIPMENT, UPGRADES, PAINTS, CAMERA_LIMITS, state, startGame, finishGame, renderLessonOptions, renderQuestionText, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera };
+    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, TOTAL_WAVES, EQUIPMENT, UPGRADES, PAINTS, CONFUSABLE_SETS, FILL_CONTEXTS, CAMERA_LIMITS, state, startGame, finishGame, renderLessonOptions, renderQuestionText, buildQuestionOptions, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera };
   </script>
 </body>
 </html>
