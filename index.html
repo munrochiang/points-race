@@ -198,6 +198,11 @@
     .space-camera > .question-beacon { transform: translateZ(118px); }
     .space-camera > .player-craft { transform: translateZ(165px); }
     .space-camera > .laser { translate: 0 0 150px; }
+    .webgl-space { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+    .battlefield.webgl-ready::after { opacity: .08; }
+    .battlefield.webgl-ready .galaxy, .battlefield.webgl-ready .starfield, .battlefield.webgl-ready .speed-lines { opacity: .08; }
+    .battlefield.webgl-ready .fighter, .battlefield.webgl-ready .thruster { opacity: 0; }
+    .battlefield.webgl-ready .enemy-mech, .battlefield.webgl-ready .enemy-trail { opacity: 0; }
     .battlefield::before {
       content: ""; position: absolute; inset: -35%; opacity: .6; z-index: -5;
       background:
@@ -237,8 +242,11 @@
     .battle-label::before { content: "●"; margin-right: 7px; color: var(--red); animation: blink .75s steps(1) infinite; }
     @keyframes blink { 50% { opacity: .25; } }
 
-    .camera-reset { position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 13; min-height: 40px; padding: 7px 12px; color: white; background: rgba(7,27,53,.88); border: 2px solid rgba(101,233,255,.7); border-radius: 999px; box-shadow: 0 0 15px rgba(101,233,255,.18); font-size: 12px; font-weight: 1000; cursor: pointer; touch-action: manipulation; }
-    .camera-reset:active { translate: 0 2px; }
+    .camera-controls { position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 13; display: flex; gap: 7px; }
+    .camera-control { min-height: 40px; padding: 7px 12px; color: white; background: rgba(7,27,53,.9); border: 2px solid rgba(101,233,255,.7); border-radius: 999px; box-shadow: 0 0 15px rgba(101,233,255,.18); font-size: 12px; font-weight: 1000; cursor: pointer; touch-action: manipulation; }
+    .camera-control:active { translate: 0 2px; }
+    .motion-toggle.active { color: var(--ink); background: var(--cyan); border-color: white; box-shadow: 0 0 20px rgba(101,233,255,.65); }
+    .motion-toggle.unsupported { opacity: .55; }
 
     .route-map { position: absolute; left: 18px; top: 39px; z-index: 9; display: flex; align-items: center; gap: 4px; padding: 5px 8px; border: 1px solid rgba(101,233,255,.3); border-radius: 999px; background: rgba(5,18,38,.72); pointer-events: none; }
     .route-node { display: flex; align-items: center; gap: 4px; color: #6f87a6; font-size: 9px; font-weight: 1000; white-space: nowrap; }
@@ -433,7 +441,8 @@
       .equipment-status { margin-top: 3px; font-size: 8px; }
       .player-craft { width: 115px; }
       .battle-label { display: none; }
-      .camera-reset { bottom: 9px; left: 8px; min-height: 35px; padding: 5px 9px; font-size: 10px; }
+      .camera-controls { bottom: 9px; left: 8px; gap: 4px; }
+      .camera-control { min-height: 35px; padding: 5px 9px; font-size: 10px; }
       .route-map { left: 50%; top: 88px; translate: -50% 0; max-width: calc(100% - 14px); padding: 4px 6px; overflow: hidden; }
       .route-node { gap: 2px; font-size: 0; }
       .route-node::after { margin-inline: 1px; font-size: 10px; }
@@ -557,10 +566,10 @@
           </div>
           <div class="laser" id="laser"></div>
         </div>
-        <div class="battle-label">3D 星海攔截戰・拖曳視角・點擊敵機開火</div>
+        <div class="battle-label">WEBGL 星海攔截戰・傾斜平板或拖曳視角</div>
         <div class="route-map" id="routeMap" aria-label="星際航線"></div>
         <div class="stage-banner" id="stageBanner" role="status"><span class="stage-planet" id="stagePlanet">🌍</span><small>NOW ENTERING</small><strong id="stageName">地球軌道</strong></div>
-        <button class="camera-reset" id="cameraReset" type="button" aria-label="重設三維戰場視角">↻ 視角</button>
+        <div class="camera-controls" aria-label="視角控制"><button class="camera-control camera-reset" id="cameraReset" type="button" aria-label="重設三維戰場視角">↻ 視角</button><button class="camera-control motion-toggle" id="motionToggle" type="button" aria-label="開啟平板陀螺儀控制">◉ 陀螺儀</button></div>
         <div class="damage-flash" id="damageFlash"></div>
         <div class="nuclear-flash" id="nuclearFlash" aria-hidden="true"></div>
         <aside class="equipment-shop" aria-label="武裝補給站">
@@ -591,6 +600,8 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+  <script src="webgl-scene.js"></script>
   <script src="vocabulary.js"></script>
   <script>
     "use strict";
@@ -624,15 +635,16 @@
     const ALL_CURRICULUM_ITEMS = Object.values(BOOKS).flat();
     const CONFUSABLE_CHARS = new Set(CONFUSABLE_SETS.flat());
 
-    const state = { level: "easy", selectedBooks: ["1a"], selectedLessonKeys: new Set(), pool: [], question: null, score: 0, hp: 100, wave: 0, stageIndex: -1, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(), ownedPaints: new Set(["blue"]), paint: "blue", cameraYaw: 0, cameraPitch: 0 };
+    const state = { level: "easy", selectedBooks: ["1a"], selectedLessonKeys: new Set(), pool: [], question: null, score: 0, hp: 100, wave: 0, stageIndex: -1, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(), ownedPaints: new Set(["blue"]), paint: "blue", cameraYaw: 0, cameraPitch: 0, motionEnabled: false, motionBaseline: null };
     const $ = (id) => document.getElementById(id);
     const els = {
       setup: $("setupScreen"), game: $("gameScreen"), result: $("resultScreen"), difficultyHint: $("difficultyHint"), start: $("startButton"), lessonOptions: $("lessonOptions"), toggleLessons: $("toggleLessonsButton"),
-      hpText: $("hpText"), hpFill: $("hpFill"), wave: $("waveText"), stageText: $("stageText"), score: $("scoreText"), battlefield: $("battlefield"), scene: $("spaceCamera"), cameraReset: $("cameraReset"), fort: $("fort"), laser: $("laser"), damageFlash: $("damageFlash"),
+      hpText: $("hpText"), hpFill: $("hpFill"), wave: $("waveText"), stageText: $("stageText"), score: $("scoreText"), battlefield: $("battlefield"), scene: $("spaceCamera"), cameraReset: $("cameraReset"), motionToggle: $("motionToggle"), fort: $("fort"), laser: $("laser"), damageFlash: $("damageFlash"),
       questionIcon: $("questionIcon"), questionType: $("questionType"), questionText: $("questionText"), answers: $("answers"), pilot: $("pilotBubble"), combo: $("comboText"),
       equipment: [...document.querySelectorAll("[data-equipment]")], upgrades: [...document.querySelectorAll("[data-upgrade]")], paints: [...document.querySelectorAll("[data-paint]")], shopTabs: [...document.querySelectorAll("[data-shop-tab]")], shopPanels: [...document.querySelectorAll("[data-shop-panel]")], route: $("routeMap"), stageBanner: $("stageBanner"), stagePlanet: $("stagePlanet"), stageName: $("stageName"), nuclearFlash: $("nuclearFlash"), toast: $("toast"), sound: $("soundButton"), resultTitle: $("resultTitle"), resultMessage: $("resultMessage"), resultBadge: $("resultBadge"),
       finalScore: $("finalScore"), accuracy: $("accuracy"), maxCombo: $("maxCombo")
     };
+    const spaceRenderer = window.SpaceRenderer ? new window.SpaceRenderer(els.battlefield, () => state) : null;
 
     let audioContext = null;
     function tone(frequency, duration = .08, type = "square", volume = .045) {
@@ -656,6 +668,7 @@
 
     function showScreen(screen) {
       [els.setup, els.game, els.result].forEach((item) => { item.hidden = item !== screen; });
+      if (screen === els.game) requestAnimationFrame(() => spaceRenderer?.resize());
     }
 
     const CAMERA_LIMITS = Object.freeze({ yaw: 13, pitch: 8 });
@@ -691,6 +704,65 @@
       els.scene.classList.remove("camera-dragging");
     }
 
+    function orientationAxes(beta, gamma) {
+      const angle = Number(screen.orientation?.angle ?? window.orientation ?? 0);
+      if (angle === 90) return { yaw: beta, pitch: -gamma, angle };
+      if (angle === -90 || angle === 270) return { yaw: -beta, pitch: gamma, angle };
+      return { yaw: gamma, pitch: beta, angle };
+    }
+
+    const angleDelta = (value, origin) => ((value - origin + 540) % 360) - 180;
+    function handleDeviceOrientation(event) {
+      if (!state.motionEnabled || !Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) return false;
+      const axes = orientationAxes(event.beta, event.gamma);
+      if (!state.motionBaseline || state.motionBaseline.angle !== axes.angle) {
+        state.motionBaseline = axes;
+        return true;
+      }
+      const targetYaw = clamp(angleDelta(axes.yaw, state.motionBaseline.yaw) * .72, -CAMERA_LIMITS.yaw, CAMERA_LIMITS.yaw);
+      const targetPitch = clamp(-angleDelta(axes.pitch, state.motionBaseline.pitch) * .42, -CAMERA_LIMITS.pitch, CAMERA_LIMITS.pitch);
+      setCamera(state.cameraYaw + (targetYaw - state.cameraYaw) * .24, state.cameraPitch + (targetPitch - state.cameraPitch) * .24);
+      return true;
+    }
+
+    function updateMotionButton() {
+      els.motionToggle.classList.toggle("active", state.motionEnabled);
+      els.motionToggle.textContent = state.motionEnabled ? "◉ 陀螺儀 ON" : "◉ 陀螺儀";
+      els.motionToggle.setAttribute("aria-label", state.motionEnabled ? "關閉平板陀螺儀控制" : "開啟平板陀螺儀控制");
+    }
+
+    async function toggleMotionControl() {
+      if (!("DeviceOrientationEvent" in window)) {
+        els.motionToggle.classList.add("unsupported");
+        els.motionToggle.textContent = "無陀螺儀";
+        showToast("這台裝置沒有陀螺儀，可改用手指拖曳");
+        return false;
+      }
+      if (state.motionEnabled) {
+        state.motionEnabled = false; state.motionBaseline = null;
+        window.removeEventListener("deviceorientation", handleDeviceOrientation);
+        updateMotionButton(); showToast("陀螺儀控制已關閉");
+        return false;
+      }
+      try {
+        if (typeof DeviceOrientationEvent.requestPermission === "function") {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission !== "granted") throw new Error("permission denied");
+        }
+        state.motionEnabled = true; state.motionBaseline = null;
+        window.addEventListener("deviceorientation", handleDeviceOrientation, { passive: true });
+        updateMotionButton(); showToast("陀螺儀已啟動！傾斜平板轉動視角"); tone(620, .12, "sine", .04);
+        return true;
+      } catch (_) {
+        showToast("無法取得動作感應權限，請改用手指拖曳");
+        return false;
+      }
+    }
+
+    function resetCamera() {
+      state.motionBaseline = null; setCamera(0, 0); tone(520, .07, "sine", .035);
+    }
+
     function selectShopTab(tabName) {
       els.shopTabs.forEach((button) => { const active = button.dataset.shopTab === tabName; button.classList.toggle("active", active); button.setAttribute("aria-selected", String(active)); });
       els.shopPanels.forEach((panel) => { panel.hidden = panel.dataset.shopPanel !== tabName; });
@@ -700,6 +772,7 @@
       els.fort.dataset.paint = state.paint;
       els.fort.classList.toggle("has-twin", state.upgrades.has("twin"));
       els.fort.classList.toggle("has-shield", state.upgrades.has("shield"));
+      spaceRenderer?.setLoadout(state.paint, state.upgrades);
     }
 
     function applyStage(index) {
@@ -709,6 +782,7 @@
       els.battlefield.style.setProperty("--sector-a", stage.nebula[0]); els.battlefield.style.setProperty("--sector-b", stage.nebula[1]); els.battlefield.style.setProperty("--sector-c", stage.nebula[2]);
       els.stageText.textContent = stage.name; els.stagePlanet.textContent = stage.planet; els.stageName.textContent = stage.name;
       els.route.innerHTML = STAGES.map((item, routeIndex) => `<span class="route-node${routeIndex < index ? " done" : routeIndex === index ? " active" : ""}"><span class="route-planet">${item.planet}</span><span>${item.name.replace("軌道", "").replace("航道", "")}</span></span>`).join("");
+      spaceRenderer?.setStage(index);
     }
 
     function showStageTransition(index) {
@@ -754,6 +828,7 @@
       clearTimeout(state.freezeTimer); clearTimeout(state.stageTimer);
       Object.assign(state, { selectedBooks: books, pool, score: 0, hp: 100, wave: 0, stageIndex: -1, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: true, locked: false, tick: performance.now(), freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(), ownedPaints: new Set(["blue"]), paint: "blue" });
       els.battlefield.classList.remove("frozen");
+      state.motionBaseline = null;
       setCamera(0, 0);
       selectShopTab("tactical"); applyLoadout();
       showScreen(els.game); updateHUD(); nextQuestion(); requestAnimationFrame(gameLoop); tone(330, .08); setTimeout(() => tone(660, .15), 90);
@@ -1024,7 +1099,8 @@
     els.scene.addEventListener("pointermove", moveCamera);
     els.scene.addEventListener("pointerup", endCameraDrag);
     els.scene.addEventListener("pointercancel", endCameraDrag);
-    els.cameraReset.addEventListener("click", () => { setCamera(0, 0); tone(520, .07, "sine", .035); });
+    els.cameraReset.addEventListener("click", resetCamera);
+    els.motionToggle.addEventListener("click", toggleMotionControl);
     $("soundButton").addEventListener("click", () => { state.muted = !state.muted; els.sound.textContent = state.muted ? "🔇" : "🔊"; els.sound.setAttribute("aria-label", state.muted ? "開啟音效" : "關閉音效"); if (!state.muted) tone(440); });
     $("quitButton").addEventListener("click", () => { state.running = false; showScreen(els.setup); });
     $("backButton").addEventListener("click", () => showScreen(els.setup));
@@ -1032,7 +1108,7 @@
     document.addEventListener("keydown", (event) => { const key = Number(event.key); if (key >= 1 && key <= 4 && els.answers.children[key - 1]) els.answers.children[key - 1].click(); });
 
     // Minimal public surface for automated smoke tests.
-    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, TOTAL_WAVES, EQUIPMENT, UPGRADES, PAINTS, CONFUSABLE_SETS, FILL_CONTEXTS, CAMERA_LIMITS, state, startGame, finishGame, renderLessonOptions, renderQuestionText, buildQuestionOptions, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera };
+    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, TOTAL_WAVES, EQUIPMENT, UPGRADES, PAINTS, CONFUSABLE_SETS, FILL_CONTEXTS, CAMERA_LIMITS, state, webgl: spaceRenderer, startGame, finishGame, renderLessonOptions, renderQuestionText, buildQuestionOptions, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera, resetCamera, toggleMotionControl, handleDeviceOrientation };
   </script>
 </body>
 </html>
