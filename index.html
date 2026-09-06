@@ -298,9 +298,6 @@
     .question-type.review span { background: var(--cyan); }
 
     .player-craft { --ship-accent-light: #3b9cff; --ship-accent-dark: #154aa8; --ship-glow: #65e9ff; position: absolute; left: 50%; bottom: 1%; z-index: 7; width: clamp(125px, 18vw, 178px); translate: -50% 0; text-align: center; filter: drop-shadow(0 14px 10px rgba(0,0,0,.5)); animation: playerHover 1.6s ease-in-out infinite alternate; }
-    .player-craft[data-paint="red"] { --ship-accent-light: #ff6f72; --ship-accent-dark: #a31328; --ship-glow: #ff9d74; }
-    .player-craft[data-paint="gold"] { --ship-accent-light: #ffe568; --ship-accent-dark: #b97808; --ship-glow: #fff1a1; }
-    .player-craft[data-paint="purple"] { --ship-accent-light: #c58aff; --ship-accent-dark: #5d2ca8; --ship-glow: #dfb7ff; }
     .player-craft::before { content: ""; position: absolute; left: 50%; bottom: 5%; z-index: -1; width: 145%; aspect-ratio: 2.5; translate: -50% 0; border: 3px solid var(--ship-glow); border-radius: 50%; box-shadow: 0 0 24px var(--ship-glow), inset 0 0 22px rgba(29,110,231,.5); opacity: .68; animation: shieldPulse 1.3s ease-in-out infinite alternate; }
     .player-craft.shake { animation: playerHit .45s ease; }
     @keyframes playerHover { to { translate: -50% -5px; } }
@@ -381,9 +378,6 @@
     .equipment-shop { position: absolute; right: max(12px, env(safe-area-inset-right)); top: 18px; z-index: 11; width: 166px; padding: 10px; color: white; background: rgba(5,18,38,.94); border: 3px solid #417caf; border-radius: 17px 5px 17px 5px; box-shadow: inset 0 0 22px rgba(29,110,231,.28), 0 8px 20px rgba(0,0,0,.35); }
     .equipment-title { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 8px; color: var(--cyan); font-size: 12px; font-weight: 1000; letter-spacing: .08em; }
     .equipment-title small { color: #8aa8ca; font-size: 9px; }
-    .equipment-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 7px; }
-    .equipment-tab { min-height: 29px; padding: 2px; color: #9bb9da; background: #0d2441; border: 1px solid #46688f; border-radius: 7px; font-size: 10px; font-weight: 1000; cursor: pointer; }
-    .equipment-tab.active { color: var(--ink); background: var(--yellow); border-color: white; }
     .equipment-list { display: grid; gap: 7px; max-height: min(390px, calc(100dvh - 180px)); overflow: auto; scrollbar-width: thin; }
     .equipment-button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 7px; width: 100%; min-height: 51px; padding: 5px 7px; color: white; text-align: left; background: linear-gradient(135deg, #17375f, #0d2544); border: 2px solid #4b6e98; border-radius: 11px; cursor: pointer; box-shadow: inset 0 0 10px rgba(101,233,255,.08); transition: transform .12s, filter .2s, opacity .2s; }
     .equipment-button:active:not(:disabled) { transform: translateY(2px); }
@@ -398,7 +392,6 @@
     .equipment-name { font-size: 12px; }
     .equipment-status { margin-top: 4px; color: var(--yellow); font-size: 10px; }
     .equipment-button[data-equipment="nuclear"] .equipment-icon { color: white; background: var(--red); }
-    .equipment-button[data-paint] .equipment-icon { border: 2px solid white; background: var(--paint-color); color: white; text-shadow: 0 1px 2px #000; }
     .nuclear-flash { position: absolute; inset: 0; z-index: 19; pointer-events: none; opacity: 0; background: radial-gradient(circle, white 0 5%, var(--yellow) 11%, var(--orange) 23%, rgba(236,75,88,.78) 38%, transparent 70%); mix-blend-mode: screen; }
     .nuclear-flash.fire { animation: nuclearFlash .9s ease-out; }
     @keyframes nuclearFlash { 8% { opacity: 1; scale: .12; } 42% { opacity: .88; scale: 1.5; } to { opacity: 0; scale: 2.2; } }
@@ -466,8 +459,6 @@
       .enemy-answer { font-size: clamp(20px, 6vw, 28px); border-width: 3px; }
       .equipment-shop { left: 6px; right: 6px; top: 6px; width: auto; padding: 5px; border-width: 2px; border-radius: 12px; }
       .equipment-title { display: none; }
-      .equipment-tabs { width: 130px; margin: 0 auto 4px; }
-      .equipment-tab { min-height: 23px; font-size: 9px; }
       .equipment-list { display: flex; gap: 5px; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 1px; }
       .equipment-list { touch-action: pan-x; }
       .equipment-button { flex: 0 0 108px; grid-template-columns: 25px minmax(0, 1fr); gap: 3px; min-height: 46px; padding: 3px 4px; border-width: 1px; border-radius: 8px; }
@@ -500,7 +491,6 @@
       .player-craft { width: 92px; }
       .enemy-unit { width: clamp(68px, 10vw, 96px); }
       .equipment-shop { top: 7px; width: 154px; }
-      .equipment-tabs { margin-bottom: 4px; }
       .equipment-list { gap: 5px; }
       .equipment-button { min-height: 42px; }
       .route-map { top: 36px; }
@@ -619,22 +609,15 @@
         <div class="damage-flash" id="damageFlash"></div>
         <div class="nuclear-flash" id="nuclearFlash" aria-hidden="true"></div>
         <aside class="equipment-shop" aria-label="武裝補給站">
-          <div class="equipment-title"><span>武裝補給站</span><small>分數兌換</small></div>
-          <div class="equipment-tabs" role="tablist" aria-label="補給分類"><button class="equipment-tab active" type="button" role="tab" aria-selected="true" data-shop-tab="tactical">戰術武器</button><button class="equipment-tab" type="button" role="tab" aria-selected="false" data-shop-tab="loadout">機體改裝</button></div>
-          <div class="equipment-list" data-shop-panel="tactical">
+          <div class="equipment-title"><span>武器與裝備</span><small>直接點選</small></div>
+          <div class="equipment-list">
             <button class="equipment-button" type="button" data-equipment="ion" aria-label="兌換離子干擾，移除兩個錯誤答案"><span class="equipment-icon">⚡</span><span class="equipment-copy"><span class="equipment-name">離子干擾</span><span class="equipment-status">250 分</span></span></button>
             <button class="equipment-button" type="button" data-equipment="gravity" aria-label="兌換重力震盪彈，將敵機推遠"><span class="equipment-icon">🌀</span><span class="equipment-copy"><span class="equipment-name">重力震盪彈</span><span class="equipment-status">300 分</span></span></button>
             <button class="equipment-button" type="button" data-equipment="freeze" aria-label="兌換時空凍結，暫停敵機五秒"><span class="equipment-icon">❄</span><span class="equipment-copy"><span class="equipment-name">時空凍結</span><span class="equipment-status">350 分</span></span></button>
             <button class="equipment-button" type="button" data-equipment="repair" aria-label="兌換奈米修復，恢復三十點護盾"><span class="equipment-icon">🔧</span><span class="equipment-copy"><span class="equipment-name">奈米修復</span><span class="equipment-status">450 分</span></span></button>
             <button class="equipment-button" type="button" data-equipment="nuclear" aria-label="兌換星核彈，直接消滅本波敵機"><span class="equipment-icon">☢</span><span class="equipment-copy"><span class="equipment-name">星核彈</span><span class="equipment-status">650 分</span></span></button>
-          </div>
-          <div class="equipment-list" data-shop-panel="loadout" hidden>
             <button class="equipment-button" type="button" data-upgrade="twin" aria-label="購買雙聯光束炮，每次答對加五十分"><span class="equipment-icon">🔫</span><span class="equipment-copy"><span class="equipment-name">雙聯光束炮</span><span class="equipment-status">500 分</span></span></button>
             <button class="equipment-button" type="button" data-upgrade="shield" aria-label="購買蜂巢裝甲，敵機撞擊傷害減半"><span class="equipment-icon">⬡</span><span class="equipment-copy"><span class="equipment-name">蜂巢裝甲</span><span class="equipment-status">550 分</span></span></button>
-            <button class="equipment-button" type="button" data-paint="blue" style="--paint-color:#2784e8" aria-label="換成星海藍配色"><span class="equipment-icon">藍</span><span class="equipment-copy"><span class="equipment-name">星海藍</span><span class="equipment-status">已擁有</span></span></button>
-            <button class="equipment-button" type="button" data-paint="red" style="--paint-color:#dc3346" aria-label="購買烈焰紅配色"><span class="equipment-icon">紅</span><span class="equipment-copy"><span class="equipment-name">烈焰紅</span><span class="equipment-status">200 分</span></span></button>
-            <button class="equipment-button" type="button" data-paint="gold" style="--paint-color:#d89a18" aria-label="購買太陽金配色"><span class="equipment-icon">金</span><span class="equipment-copy"><span class="equipment-name">太陽金</span><span class="equipment-status">300 分</span></span></button>
-            <button class="equipment-button" type="button" data-paint="purple" style="--paint-color:#824ad1" aria-label="購買星雲紫配色"><span class="equipment-icon">紫</span><span class="equipment-copy"><span class="equipment-name">星雲紫</span><span class="equipment-status">300 分</span></span></button>
           </div>
         </aside>
       </div>
@@ -683,13 +666,12 @@
       nuclear: { cost: 650, name: "星核彈" }
     });
     const UPGRADES = Object.freeze({ twin: { cost: 500, name: "雙聯光束炮" }, shield: { cost: 550, name: "蜂巢裝甲" } });
-    const PAINTS = Object.freeze({ blue: { cost: 0, name: "星海藍" }, red: { cost: 200, name: "烈焰紅" }, gold: { cost: 300, name: "太陽金" }, purple: { cost: 300, name: "星雲紫" } });
     const SPAWNS = [{ x: 10, y: 13 }, { x: 36, y: 5 }, { x: 64, y: 5 }, { x: 90, y: 13 }];
     const ALL_CURRICULUM_ITEMS = Object.values(BOOKS).flat();
     const CONFUSABLE_CHARS = new Set(CONFUSABLE_SETS.flat());
 
     function loadProgress() {
-      const fallback = { unlockedLevel: 0, cleared: {}, stars: {}, bestScores: {}, mistakes: {}, upgrades: [], ownedPaints: ["blue"], paint: "blue", settings: null };
+      const fallback = { unlockedLevel: 0, cleared: {}, stars: {}, bestScores: {}, mistakes: {}, upgrades: [], settings: null };
       try {
         const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
         return saved && typeof saved === "object" ? { ...fallback, ...saved, mistakes: saved.mistakes || {}, cleared: saved.cleared || {}, stars: saved.stars || {}, bestScores: saved.bestScores || {} } : fallback;
@@ -697,13 +679,13 @@
     }
     const progress = loadProgress();
     progress.unlockedLevel = Math.min(STAGES.length - 1, Math.max(0, Number(progress.unlockedLevel) || 0));
-    const state = { level: progress.settings?.level || "easy", selectedBooks: [], selectedLessonKeys: new Set(), selectedCampaignLevel: progress.unlockedLevel, displayedSystem: Math.floor(progress.unlockedLevel / 6), pool: [], question: null, recentQuestionIds: [], score: 0, hp: 100, wave: 0, stageIndex: -1, bossHP: BOSS_PHASES, bossActive: false, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(progress.upgrades || []), ownedPaints: new Set(progress.ownedPaints || ["blue"]), paint: progress.paint || "blue", cameraYaw: 0, cameraPitch: 0, motionEnabled: false, motionBaseline: null };
+    const state = { level: progress.settings?.level || "easy", selectedBooks: [], selectedLessonKeys: new Set(), selectedCampaignLevel: progress.unlockedLevel, displayedSystem: Math.floor(progress.unlockedLevel / 6), pool: [], question: null, recentQuestionIds: [], score: 0, hp: 100, wave: 0, stageIndex: -1, bossHP: BOSS_PHASES, bossActive: false, answered: 0, correct: 0, combo: 0, maxCombo: 0, position: 0, running: false, locked: false, muted: false, tick: 0, toastTimer: 0, freezeTimer: 0, stageTimer: 0, freezeUntil: 0, equipmentUsed: new Set(), upgrades: new Set(progress.upgrades || []), cameraYaw: 0, cameraPitch: 0, motionEnabled: false, motionBaseline: null };
     const $ = (id) => document.getElementById(id);
     const els = {
       setup: $("setupScreen"), game: $("gameScreen"), result: $("resultScreen"), difficultyHint: $("difficultyHint"), start: $("startButton"), lessonOptions: $("lessonOptions"), toggleLessons: $("toggleLessonsButton"),
       hpText: $("hpText"), hpFill: $("hpFill"), wave: $("waveText"), waveTotal: $("waveTotal"), stageText: $("stageText"), score: $("scoreText"), battlefield: $("battlefield"), scene: $("spaceCamera"), cameraReset: $("cameraReset"), motionToggle: $("motionToggle"), fort: $("fort"), laser: $("laser"), damageFlash: $("damageFlash"),
       questionIcon: $("questionIcon"), questionType: $("questionType"), questionText: $("questionText"), questionTypeBox: document.querySelector(".question-type"), answers: $("answers"), pilot: $("pilotBubble"), combo: $("comboText"),
-      equipment: [...document.querySelectorAll("[data-equipment]")], upgrades: [...document.querySelectorAll("[data-upgrade]")], paints: [...document.querySelectorAll("[data-paint]")], shopTabs: [...document.querySelectorAll("[data-shop-tab]")], shopPanels: [...document.querySelectorAll("[data-shop-panel]")], route: $("routeMap"), stageBanner: $("stageBanner"), stagePlanet: $("stagePlanet"), stageName: $("stageName"), nuclearFlash: $("nuclearFlash"), toast: $("toast"), sound: $("soundButton"), resultTitle: $("resultTitle"), resultMessage: $("resultMessage"), resultBadge: $("resultBadge"),
+      equipment: [...document.querySelectorAll("[data-equipment]")], upgrades: [...document.querySelectorAll("[data-upgrade]")], route: $("routeMap"), stageBanner: $("stageBanner"), stagePlanet: $("stagePlanet"), stageName: $("stageName"), nuclearFlash: $("nuclearFlash"), toast: $("toast"), sound: $("soundButton"), resultTitle: $("resultTitle"), resultMessage: $("resultMessage"), resultBadge: $("resultBadge"),
       finalScore: $("finalScore"), accuracy: $("accuracy"), maxCombo: $("maxCombo"), campaignProgress: $("campaignProgress"), reviewCount: $("reviewCount"), systemName: $("systemName"), campaignLevels: $("campaignLevels"), missionNote: $("missionNote"), previousSystem: $("previousSystem"), nextSystem: $("nextSystem"), bossShip: $("bossShip"), bossName: $("bossName"), bossMeterFill: $("bossMeterFill")
     };
     const spaceRenderer = window.SpaceRenderer ? new window.SpaceRenderer(els.battlefield, () => state) : null;
@@ -825,22 +807,16 @@
       state.motionBaseline = null; setCamera(0, 0); tone(520, .07, "sine", .035);
     }
 
-    function selectShopTab(tabName) {
-      els.shopTabs.forEach((button) => { const active = button.dataset.shopTab === tabName; button.classList.toggle("active", active); button.setAttribute("aria-selected", String(active)); });
-      els.shopPanels.forEach((panel) => { panel.hidden = panel.dataset.shopPanel !== tabName; });
-    }
-
     function applyLoadout() {
-      els.fort.dataset.paint = state.paint;
       els.fort.classList.toggle("has-twin", state.upgrades.has("twin"));
       els.fort.classList.toggle("has-shield", state.upgrades.has("shield"));
-      spaceRenderer?.setLoadout(state.paint, state.upgrades);
+      spaceRenderer?.setLoadout("blue", state.upgrades);
     }
 
     function saveProgress() {
       progress.upgrades = [...state.upgrades];
-      progress.ownedPaints = [...state.ownedPaints];
-      progress.paint = state.paint;
+      delete progress.ownedPaints;
+      delete progress.paint;
       progress.settings = { books: selectedBooks(), lessons: [...state.selectedLessonKeys], level: state.level };
       try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch (_) { /* Saving is optional in private browsing. */ }
       renderCampaign();
@@ -928,7 +904,7 @@
       els.battlefield.classList.remove("frozen", "boss-mode");
       state.motionBaseline = null;
       setCamera(0, 0);
-      selectShopTab("tactical"); applyLoadout();
+      applyLoadout();
       saveProgress(); showScreen(els.game); applyStage(state.stageIndex); updateHUD(); nextQuestion(); requestAnimationFrame(gameLoop); tone(330, .08); setTimeout(() => tone(660, .15), 90);
     }
 
@@ -1130,16 +1106,6 @@
       tone(420, .14, "square", .04); setTimeout(() => tone(720, .2, "sine", .05), 100); saveProgress(); updateHUD();
     }
 
-    function choosePaint(type) {
-      const paint = PAINTS[type];
-      if (!paint || !state.running || state.locked) return;
-      if (!state.ownedPaints.has(type)) {
-        if (state.score < paint.cost) return;
-        state.score -= paint.cost; state.ownedPaints.add(type);
-      }
-      state.paint = type; applyLoadout(); showToast(`🎨 已換裝：${paint.name}`); tone(560, .12, "sine", .04); saveProgress(); updateHUD();
-    }
-
     function gameLoop(now) {
       if (!state.running) return;
       const delta = Math.min(50, now - state.tick); state.tick = now;
@@ -1216,12 +1182,6 @@
         button.classList.toggle("equipped", owned); button.classList.toggle("affordable", !button.disabled);
         button.querySelector(".equipment-status").textContent = owned ? "已裝配・整場有效" : state.score >= upgrade.cost ? `${upgrade.cost} 分` : `還差 ${upgrade.cost - state.score}`;
       });
-      els.paints.forEach((button) => {
-        const paint = PAINTS[button.dataset.paint]; const owned = state.ownedPaints.has(button.dataset.paint); const equipped = state.paint === button.dataset.paint;
-        button.disabled = !state.running || state.locked || equipped || (!owned && state.score < paint.cost);
-        button.classList.toggle("equipped", equipped); button.classList.toggle("affordable", !button.disabled);
-        button.querySelector(".equipment-status").textContent = equipped ? "使用中" : owned ? "點擊免費換裝" : state.score >= paint.cost ? `${paint.cost} 分` : `還差 ${paint.cost - state.score}`;
-      });
     }
 
     function finishGame(victory) {
@@ -1285,8 +1245,6 @@
     els.start.addEventListener("click", startGame);
     els.equipment.forEach((button) => button.addEventListener("click", () => useEquipment(button.dataset.equipment)));
     els.upgrades.forEach((button) => button.addEventListener("click", () => buyUpgrade(button.dataset.upgrade)));
-    els.paints.forEach((button) => button.addEventListener("click", () => choosePaint(button.dataset.paint)));
-    els.shopTabs.forEach((button) => button.addEventListener("click", () => selectShopTab(button.dataset.shopTab)));
     els.scene.addEventListener("pointerdown", beginCameraDrag);
     els.scene.addEventListener("pointermove", moveCamera);
     els.scene.addEventListener("pointerup", endCameraDrag);
@@ -1300,7 +1258,7 @@
     document.addEventListener("keydown", (event) => { const key = Number(event.key); if (key >= 1 && key <= 4 && els.answers.children[key - 1]) els.answers.children[key - 1].click(); });
 
     // Minimal public surface for automated smoke tests.
-    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, CAMPAIGN_SYSTEMS, TOTAL_WAVES, REGULAR_WAVES, BOSS_PHASES, EQUIPMENT, UPGRADES, PAINTS, CONFUSABLE_SETS, FILL_CONTEXTS, EXAM_FILL_CONTEXTS, CAMERA_LIMITS, progress, state, webgl: spaceRenderer, startGame, nextQuestion, finishGame, renderCampaign, renderLessonOptions, renderQuestionText, buildQuestionOptions, questionId, chooseQuestionItem, rememberWrongAnswer, rememberCorrectAnswer, useEquipment, buyUpgrade, choosePaint, selectShopTab, applyStage, baseHit, setCamera, resetCamera, toggleMotionControl, handleDeviceOrientation };
+    window.WordDefense = { BOOKS, BOOK_INFO, STAGES, CAMPAIGN_SYSTEMS, TOTAL_WAVES, REGULAR_WAVES, BOSS_PHASES, EQUIPMENT, UPGRADES, CONFUSABLE_SETS, FILL_CONTEXTS, EXAM_FILL_CONTEXTS, CAMERA_LIMITS, progress, state, webgl: spaceRenderer, startGame, nextQuestion, finishGame, renderCampaign, renderLessonOptions, renderQuestionText, buildQuestionOptions, questionId, chooseQuestionItem, rememberWrongAnswer, rememberCorrectAnswer, useEquipment, buyUpgrade, applyStage, baseHit, setCamera, resetCamera, toggleMotionControl, handleDeviceOrientation };
   </script>
 </body>
 </html>
