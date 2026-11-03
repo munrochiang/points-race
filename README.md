@@ -1,12 +1,7 @@
-# 字宙防衛隊
+# 競速溜冰場邊工具
 
-康軒一般版小一上、小一下、小二上國語學習遊戲。以太空射擊、行星關卡、戰機換裝與武器兌換練習國字、注音、部首及詞語。
-
-👉 **[開啟字宙防衛隊](https://munrochiang.github.io/points-race/)**
-
-舊版競速溜冰計分賽工具保留於 **[points-race.html](https://munrochiang.github.io/points-race/points-race.html)**。
-
-溜冰課場邊壓秒工具：**[rink-log.html](https://munrochiang.github.io/points-race/rink-log.html)**（手機開啟後「加入主畫面」）。
+- 計分賽即時建議：**[points-race.html](https://munrochiang.github.io/points-race/points-race.html)**
+- 溜冰課場邊壓秒：**[rink-log.html](https://munrochiang.github.io/points-race/rink-log.html)**（手機開啟後「加入主畫面」）
 
 ---
 
