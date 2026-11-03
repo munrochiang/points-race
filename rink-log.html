@@ -177,9 +177,9 @@
   <div class="grid">
     <button class="btn ev" data-ev="帶">帶</button>
     <button class="btn ev" data-ev="跟">跟</button>
-    <button class="btn ev good" data-ev="超車">超車</button>
-    <button class="btn ev warn" data-ev="被超">被超</button>
+    <button class="btn ev good" data-ev="衝刺">衝刺</button>
     <button class="btn ev warn" data-ev="掉隊">掉隊</button>
+    <button class="btn ev warn" data-ev="前面掉">前面掉</button>
     <button class="btn ev warn" data-ev="喘">喘</button>
     <button class="btn ev bad" data-ev="痛">痛</button>
     <button class="btn ev bad" data-ev="摔">摔</button>
@@ -256,7 +256,9 @@
 <script>
 (() => {
   const KEY = 'rink-log:v1';
-  const SETS = ['大圈跑步', '大圈熱身', '中圈基本', '中圈自主', '起跑', '300', '500', '1000', '接力', '緩和'];
+  // 距離組：name → 預期過線次數（500+D 從半圈處起跑，過線 0.5/1.5/2.5 共 3 次）
+  const DIST = { '200': 1, '500+D': 3, '1000': 5, '2000': 10, '3000': 15, '4000': 20, '5000': 25, '6000': 30, '10000': 50 };
+  const SETS = ['大圈跑步', '大圈熱身', '中圈基本', '中圈自主', '起跑', '變位練習', '後超越', '接力', '緩和', ...Object.keys(DIST)];
   const $ = id => document.getElementById(id);
 
   // ── state ──
@@ -327,7 +329,9 @@
     let lastSplit = '—';
     if (laps.length >= 2) lastSplit = sec(laps[laps.length - 1].t - laps[laps.length - 2].t) + 's';
     else if (laps.length === 1 && s) lastSplit = sec(laps[0].t - s.t) + 's（起跑→第1次過線）';
-    $('lapInfo').textContent = `第 ${laps.length} 圈　上圈 ${lastSplit}`;
+    const need = s && DIST[s.text];
+    const total = laps.length && s ? `　總 ${sec(laps[laps.length - 1].t - s.t)}s` : '';
+    $('lapInfo').textContent = `第 ${laps.length}${need ? '／' + need : ''} 圈　上圈 ${lastSplit}${total}`;
 
     // log, newest first
     const log = $('log');
@@ -380,8 +384,13 @@
     if (now - lastLapAt < 400) return;   // 防連點
     lastLapAt = now;
     if (!currentSet()) { openSet(); return; }
-    push({ t: now, type: 'lap', lap: currentLaps().length + 1 });
+    const s = currentSet(); const n = currentLaps().length + 1;
+    push({ t: now, type: 'lap', lap: n });
     vib(30);
+    if (DIST[s.text] && n >= DIST[s.text]) {
+      push({ t: now, type: 'set_end' });
+      toast(`${state.kid} ${s.text} 完成 ${sec(now - s.t)}s`); vib([30, 60, 30]);
+    }
     const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
   });
 
