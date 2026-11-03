@@ -6,19 +6,19 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1a1a2e">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23e94560'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#121416">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%233d4652'/%3E%3C/svg%3E">
 <title>場邊壓秒</title>
 <style>
   :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --card: #0f3460;
-    --accent: #e94560;
-    --text: #eee;
-    --text-dim: #8899aa;
-    --success: #00b894;
-    --warn: #f5a623;
+    --bg: #121416;
+    --surface: #1b1e22;
+    --card: #262a30;
+    --accent: #3d4652;
+    --text: #e6e4df;
+    --text-dim: #8a8f96;
+    --success: #4f7f6a;
+    --warn: #b89a5a;
     --radius: 12px;
   }
 
@@ -58,8 +58,8 @@
     padding: 8px 14px; font-size: 15px; font-weight: 700; font-family: inherit;
   }
   .seg button.on { background: var(--accent); }
-  .seg.kid button.on[data-v="毛"] { background: #3a7bd5; }
-  .seg.kid button.on[data-v="爪"] { background: #00b894; color: #062; }
+  .seg.kid button.on[data-v="毛"] { background: #4a5a74; }
+  .seg.kid button.on[data-v="爪"] { background: #4f7f6a; }
   .obs { width: 44px; padding: 7px 6px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2);
          background: transparent; color: var(--text); font-size: 15px; text-align: center; font-family: inherit; }
 
@@ -85,17 +85,17 @@
     min-height: 34vh;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 4px;
-    box-shadow: 0 6px 20px rgba(233,69,96,0.35);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
   }
   .lap .big { font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
   .lap .label { font-size: 22px; font-weight: 800; letter-spacing: 4px; }
   .lap .sub { font-size: 15px; opacity: 0.9; font-variant-numeric: tabular-nums; }
   .lap.flash { filter: brightness(1.5); }
-  .lap.untimed { background: #3a7bd5; box-shadow: 0 6px 20px rgba(58,123,213,0.35); }
-  .lap.ready { background: var(--success); color: #062; box-shadow: 0 6px 20px rgba(0,184,148,0.35); }
+  .lap.untimed { background: #333a44; }
+  .lap.ready { background: #35584b; }
   .lap.untimed .big { font-size: 44px; }
   .chips h3 { width: 100%; font-size: 13px; font-weight: 400; color: var(--text-dim); margin-top: 4px; }
-  .chips .chip.untimed { background: #1f3f6f; }
+  .chips .chip.untimed { background: #2c3139; }
 
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .ev {
@@ -104,9 +104,9 @@
     font-size: 22px;
     border-radius: 12px;
   }
-  .ev.bad { background: #5a2a3a; }
-  .ev.warn { background: #5a4a1a; }
-  .ev.good { background: #1a4a3a; }
+  .ev.bad { background: #4a3034; }
+  .ev.warn { background: #45403a; }
+  .ev.good { background: #2f4a44; }
   .ev.hit { filter: brightness(1.8); }
   .ev.wide { grid-column: 1 / -1; padding: 14px 4px; }
 
@@ -120,7 +120,7 @@
          font-size: 14px; font-variant-numeric: tabular-nums; }
   .row .t { color: var(--text-dim); width: 64px; }
   .row .k { width: 22px; font-weight: 700; }
-  .row .k.毛 { color: #6aa3ff; } .row .k.爪 { color: #3fd9b0; }
+  .row .k.毛 { color: #9db3d6; } .row .k.爪 { color: #8fc3ad; }
   .row .w { flex: 1; }
   .row .w b { color: var(--warn); }
   .row .del { color: var(--text-dim); padding: 2px 8px; font-size: 16px; background: none; border: none; }
@@ -145,12 +145,12 @@
   .stack { display: flex; flex-direction: column; gap: 8px; }
   .stack .btn { padding: 14px; font-size: 16px; }
   .btn-primary { background: var(--accent); }
-  .btn-danger { background: #7a1f2f; }
+  .btn-danger { background: #5a3338; }
   .hint { color: var(--text-dim); font-size: 13px; margin-top: 8px; line-height: 1.5; }
   textarea.out { width: 100%; height: 120px; font-family: monospace; font-size: 11px; margin: 8px 0;
-                 background: #0a0a1a; color: var(--text); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; }
+                 background: #0e1012; color: var(--text); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; }
 
-  .toast { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); background: var(--success); color: #062;
+  .toast { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); background: #3a4a44; color: var(--text);
            padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 14px; opacity: 0; transition: opacity 0.2s; z-index: 30; pointer-events: none; }
   .toast.show { opacity: 1; }
 </style>
