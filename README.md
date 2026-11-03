@@ -6,6 +6,8 @@
 
 舊版競速溜冰計分賽工具保留於 **[points-race.html](https://munrochiang.github.io/points-race/points-race.html)**。
 
+溜冰課場邊壓秒工具：**[rink-log.html](https://munrochiang.github.io/points-race/rink-log.html)**（手機開啟後「加入主畫面」）。
+
 ---
 
 ## 舊版 Points Race 說明

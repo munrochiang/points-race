@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23e94560'/%3E%3C/svg%3E">
+<title>場邊壓秒</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --text: #eee;
+    --text-dim: #8899aa;
+    --success: #00b894;
+    --warn: #f5a623;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; overscroll-behavior: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top));
+    background: var(--surface);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .header h1 { font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .clock { font-variant-numeric: tabular-nums; color: var(--text-dim); font-size: 13px; }
+
+  .seg { display: flex; border-radius: 8px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.2); }
+  .seg button {
+    border: none; background: transparent; color: var(--text);
+    padding: 8px 14px; font-size: 15px; font-weight: 700; font-family: inherit;
+  }
+  .seg button.on { background: var(--accent); }
+  .seg.kid button.on[data-v="毛"] { background: #3a7bd5; }
+  .seg.kid button.on[data-v="爪"] { background: #00b894; color: #062; }
+  .obs { width: 44px; padding: 7px 6px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2);
+         background: transparent; color: var(--text); font-size: 15px; text-align: center; font-family: inherit; }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; }
+
+  .setbar { display: flex; align-items: center; gap: 8px; }
+  .setbar .set-name { flex: 1; font-size: 17px; font-weight: 700; }
+  .setbar .set-name small { color: var(--text-dim); font-weight: 400; font-size: 13px; margin-left: 6px; }
+
+  .btn {
+    border: none; border-radius: 10px; font-weight: 700; cursor: pointer;
+    font-family: inherit; color: var(--text);
+    transition: transform 0.08s, filter 0.08s;
+  }
+  .btn:active { transform: scale(0.94); filter: brightness(1.3); }
+  .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.25); padding: 8px 12px; font-size: 14px; }
+  .btn-small { background: var(--card); padding: 8px 12px; font-size: 14px; }
+
+  .lap {
+    background: var(--accent);
+    border-radius: 16px;
+    min-height: 34vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    box-shadow: 0 6px 20px rgba(233,69,96,0.35);
+  }
+  .lap .big { font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  .lap .label { font-size: 22px; font-weight: 800; letter-spacing: 4px; }
+  .lap .sub { font-size: 15px; opacity: 0.9; font-variant-numeric: tabular-nums; }
+  .lap.flash { filter: brightness(1.5); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ev {
+    background: var(--card);
+    padding: 16px 4px;
+    font-size: 20px;
+    border-radius: 12px;
+  }
+  .ev.bad { background: #5a2a3a; }
+  .ev.warn { background: #5a4a1a; }
+  .ev.good { background: #1a4a3a; }
+  .ev.hit { filter: brightness(1.8); }
+
+  .tools { display: flex; gap: 8px; }
+  .tools .btn { flex: 1; }
+
+  /* ── Log ── */
+  .log { flex: 1; min-height: 120px; max-height: 32vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+         background: var(--surface); border-radius: var(--radius); padding: 4px 0; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+         font-size: 14px; font-variant-numeric: tabular-nums; }
+  .row .t { color: var(--text-dim); width: 64px; }
+  .row .k { width: 22px; font-weight: 700; }
+  .row .k.毛 { color: #6aa3ff; } .row .k.爪 { color: #3fd9b0; }
+  .row .w { flex: 1; }
+  .row .w b { color: var(--warn); }
+  .row .del { color: var(--text-dim); padding: 2px 8px; font-size: 16px; background: none; border: none; }
+  .row.set { background: rgba(255,255,255,0.05); font-weight: 700; }
+
+  /* ── Sheet ── */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; z-index: 20; }
+  .sheet-bg.open { display: flex; align-items: flex-end; }
+  .sheet { background: var(--surface); width: 100%; border-radius: 16px 16px 0 0; padding: 16px;
+           padding-bottom: calc(16px + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
+  .sheet h2 { font-size: 16px; margin-bottom: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { background: var(--card); padding: 12px 16px; font-size: 17px; border-radius: 10px; }
+  .field { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 15px; }
+  .field label { width: 44px; }
+  .field input[type=range] { flex: 1; }
+  .field input[type=text], .field textarea {
+    flex: 1; padding: 8px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2);
+    background: transparent; color: var(--text); font-size: 15px; font-family: inherit;
+  }
+  .field .val { width: 28px; text-align: right; font-weight: 700; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .stack .btn { padding: 14px; font-size: 16px; }
+  .btn-primary { background: var(--accent); }
+  .btn-danger { background: #7a1f2f; }
+  .hint { color: var(--text-dim); font-size: 13px; margin-top: 8px; line-height: 1.5; }
+  textarea.out { width: 100%; height: 120px; font-family: monospace; font-size: 11px; margin: 8px 0;
+                 background: #0a0a1a; color: var(--text); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; }
+
+  .toast { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); background: var(--success); color: #062;
+           padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 14px; opacity: 0; transition: opacity 0.2s; z-index: 30; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>場邊壓秒</h1>
+  <div class="seg kid" id="kidSeg">
+    <button data-v="毛">毛</button>
+    <button data-v="爪">爪</button>
+  </div>
+  <input class="obs" id="obs" placeholder="誰" maxlength="2">
+  <span class="clock" id="clock">--:--:--</span>
+</div>
+
+<div class="main">
+  <div class="setbar">
+    <div class="set-name" id="setName">尚未開始<small>按「新組」選項目</small></div>
+    <button class="btn btn-small" id="newSet">新組</button>
+    <button class="btn btn-outline" id="endSet">結束組</button>
+  </div>
+
+  <div class="lap btn" id="lap">
+    <div class="label">過線</div>
+    <div class="big" id="lapClock">0.0</div>
+    <div class="sub" id="lapInfo">第 0 圈　上圈 —</div>
+  </div>
+
+  <div class="grid">
+    <button class="btn ev" data-ev="帶">帶</button>
+    <button class="btn ev" data-ev="跟">跟</button>
+    <button class="btn ev good" data-ev="超車">超車</button>
+    <button class="btn ev warn" data-ev="被超">被超</button>
+    <button class="btn ev warn" data-ev="掉隊">掉隊</button>
+    <button class="btn ev warn" data-ev="喘">喘</button>
+    <button class="btn ev bad" data-ev="痛">痛</button>
+    <button class="btn ev bad" data-ev="摔">摔</button>
+    <button class="btn ev bad" data-ev="停">停</button>
+  </div>
+
+  <div class="tools">
+    <button class="btn btn-outline" id="undo">↶ 復原</button>
+    <button class="btn btn-outline" id="note">＋備註</button>
+    <button class="btn btn-outline" id="finish">收操</button>
+    <button class="btn btn-outline" id="export">匯出</button>
+  </div>
+
+  <div class="log" id="log"></div>
+</div>
+
+<!-- 新組 -->
+<div class="sheet-bg" id="setSheet">
+  <div class="sheet">
+    <h2>新組：這一組是什麼</h2>
+    <div class="chips" id="setChips"></div>
+    <div class="field"><label>其他</label><input type="text" id="setCustom" placeholder="自訂名稱"><button class="btn btn-small" id="setCustomOk">開始</button></div>
+    <button class="btn btn-outline" style="width:100%" data-close>取消</button>
+  </div>
+</div>
+
+<!-- 備註 -->
+<div class="sheet-bg" id="noteSheet">
+  <div class="sheet">
+    <h2>備註（時間記在打開這個視窗的瞬間）</h2>
+    <div class="field"><textarea id="noteText" rows="3" placeholder="例：500 公尺 4 人第 3，起跑領先後被超"></textarea></div>
+    <div class="stack">
+      <button class="btn btn-primary" id="noteOk">記下</button>
+      <button class="btn btn-outline" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 收操 -->
+<div class="sheet-bg" id="finishSheet">
+  <div class="sheet">
+    <h2>收操：問他三件事</h2>
+    <div class="field"><label>累</label><input type="range" id="tired" min="1" max="10" value="6"><span class="val" id="tiredVal">6</span></div>
+    <div class="field"><label>痛</label><input type="text" id="pain" placeholder="無／左膝內側…"></div>
+    <div class="field"><label>喘</label><input type="text" id="wheeze" placeholder="無／第幾組有…"></div>
+    <div class="stack">
+      <button class="btn btn-primary" id="finishOk">記下</button>
+      <button class="btn btn-outline" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 匯出 -->
+<div class="sheet-bg" id="exportSheet">
+  <div class="sheet">
+    <h2>匯出</h2>
+    <div class="stack">
+      <button class="btn btn-primary" id="shareBtn">分享 JSON 檔</button>
+      <button class="btn btn-small" id="copyBtn">複製 JSON 文字</button>
+      <button class="btn btn-small" id="csvBtn">下載 CSV</button>
+      <button class="btn btn-danger" id="clearBtn">清除全部紀錄</button>
+      <button class="btn btn-outline" data-close>關閉</button>
+    </div>
+    <textarea class="out" id="outText" readonly></textarea>
+    <div class="hint">
+      每筆都是手機的絕對時間（epoch ms），兩支手機各自記、各自匯出，合併時直接用時間對齊，不需要同時按開始。
+      上課前請確認兩支手機時間都是自動校時。
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const KEY = 'rink-log:v1';
+  const SETS = ['大圈跑步', '大圈熱身', '中圈基本', '中圈自主', '起跑', '300', '500', '1000', '接力', '緩和'];
+  const $ = id => document.getElementById(id);
+
+  // ── state ──
+  // events: {t: epoch ms, kid, obs, type, set, lap?, text?}
+  // type: set | set_end | lap | <event name> | note | finish
+  let state = load() || { kid: '毛', obs: '', events: [] };
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // ── helpers ──
+  const pad = n => String(n).padStart(2, '0');
+  const hms = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+  const sec = ms => (ms / 1000).toFixed(1);
+  const kidEvents = () => state.events.filter(e => e.kid === state.kid);
+
+  // the open set for the current kid (last set without a later set_end)
+  function currentSet() {
+    const evs = kidEvents();
+    for (let i = evs.length - 1; i >= 0; i--) {
+      if (evs[i].type === 'set_end') return null;
+      if (evs[i].type === 'set') return evs[i];
+    }
+    return null;
+  }
+  // laps in the current set for the current kid
+  function currentLaps() {
+    const s = currentSet();
+    if (!s) return [];
+    return kidEvents().filter(e => e.type === 'lap' && e.t >= s.t);
+  }
+
+  function vib(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = $('toast'); el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 1200);
+  }
+
+  function push(ev) {
+    ev.t = ev.t || Date.now();
+    ev.kid = ev.kid || state.kid;
+    ev.obs = state.obs;
+    const s = currentSet();
+    if (s && ev.type !== 'set') ev.set = s.text;
+    state.events.push(ev);
+    save(); render();
+  }
+
+  // ── render ──
+  function render() {
+    document.querySelectorAll('#kidSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === state.kid));
+    $('obs').value = state.obs;
+
+    const s = currentSet();
+    const laps = currentLaps();
+    if (s) {
+      $('setName').innerHTML = `${s.text}<small>${hms(s.t)} 開始</small>`;
+    } else {
+      $('setName').innerHTML = `尚未開始<small>按「新組」選項目</small>`;
+    }
+    const last = laps.length ? laps[laps.length - 1] : null;
+    let lastSplit = '—';
+    if (laps.length >= 2) lastSplit = sec(laps[laps.length - 1].t - laps[laps.length - 2].t) + 's';
+    else if (laps.length === 1 && s) lastSplit = sec(laps[0].t - s.t) + 's（起跑→第1次過線）';
+    $('lapInfo').textContent = `第 ${laps.length} 圈　上圈 ${lastSplit}`;
+
+    // log, newest first
+    const log = $('log');
+    const rows = state.events.slice(-80).reverse().map((e, idx) => {
+      const i = state.events.length - 1 - idx;
+      let w = '';
+      if (e.type === 'set') w = `▶ ${e.text}`;
+      else if (e.type === 'set_end') w = `■ 結束`;
+      else if (e.type === 'lap') {
+        // split vs previous lap of same kid in same set
+        let prev = null;
+        for (let j = i - 1; j >= 0; j--) {
+          const p = state.events[j];
+          if (p.kid !== e.kid) continue;
+          if (p.type === 'lap') { prev = p; break; }
+          if (p.type === 'set') { prev = p; break; }
+        }
+        w = `圈 ${e.lap}` + (prev ? `　<b>${sec(e.t - prev.t)}</b>` : '');
+      }
+      else if (e.type === 'note') w = `📝 ${e.text}`;
+      else if (e.type === 'finish') w = `收操 累${e.tired} 痛:${e.pain || '無'} 喘:${e.wheeze || '無'}`;
+      else w = `<b>${e.type}</b>`;
+      return `<div class="row ${e.type === 'set' ? 'set' : ''}">
+        <span class="t">${hms(e.t)}</span><span class="k ${e.kid}">${e.kid}</span>
+        <span class="w">${w}</span><button class="del" data-i="${i}">✕</button></div>`;
+    });
+    log.innerHTML = rows.join('') || '<div class="row" style="color:var(--text-dim)">還沒有紀錄</div>';
+  }
+
+  // live clocks
+  function tick() {
+    $('clock').textContent = hms(Date.now());
+    const laps = currentLaps(); const s = currentSet();
+    const from = laps.length ? laps[laps.length - 1].t : (s ? s.t : null);
+    $('lapClock').textContent = from ? sec(Date.now() - from) : '0.0';
+  }
+  setInterval(tick, 100);
+
+  // ── actions ──
+  $('kidSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.kid = b.dataset.v; save(); render();
+  });
+  $('obs').addEventListener('input', e => { state.obs = e.target.value.trim(); save(); });
+
+  let lastLapAt = 0;
+  $('lap').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastLapAt < 400) return;   // 防連點
+    lastLapAt = now;
+    if (!currentSet()) { openSet(); return; }
+    push({ t: now, type: 'lap', lap: currentLaps().length + 1 });
+    vib(30);
+    const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
+  });
+
+  document.querySelectorAll('.ev').forEach(b => b.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    push({ type: b.dataset.ev });
+    vib(15);
+    b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 150);
+    toast(`${state.kid} ${b.dataset.ev}`);
+  }));
+
+  $('undo').addEventListener('click', () => {
+    if (!state.events.length) return;
+    const e = state.events.pop(); save(); render(); toast(`已復原：${e.type === 'lap' ? '圈 ' + e.lap : (e.text || e.type)}`);
+  });
+
+  $('log').addEventListener('click', e => {
+    const b = e.target.closest('.del'); if (!b) return;
+    state.events.splice(+b.dataset.i, 1); save(); render();
+  });
+
+  // sheets
+  let openedAt = 0;
+  function open(id) { openedAt = Date.now(); $(id).classList.add('open'); }
+  function close() { document.querySelectorAll('.sheet-bg').forEach(s => s.classList.remove('open')); }
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+  // 用 pointerdown 開的表單，同一下點擊的 click 會落在背景上，開啟後 500ms 內不當作點背景關閉
+  document.querySelectorAll('.sheet-bg').forEach(s => s.addEventListener('click', e => { if (e.target === s && Date.now() - openedAt > 500) close(); }));
+
+  // 新組
+  $('setChips').innerHTML = SETS.map(n => `<button class="btn chip" data-n="${n}">${n}</button>`).join('');
+  function openSet() { $('setCustom').value = ''; open('setSheet'); }
+  function startSet(name) {
+    if (!name) return;
+    if (currentSet()) push({ type: 'set_end' });
+    push({ type: 'set', text: name });
+    close(); vib(30); toast(`${state.kid} ▶ ${name}`);
+  }
+  $('newSet').addEventListener('click', openSet);
+  $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startSet(b.dataset.n); });
+  $('setCustomOk').addEventListener('click', () => startSet($('setCustom').value.trim()));
+  $('endSet').addEventListener('click', () => { if (currentSet()) { push({ type: 'set_end' }); toast('組結束'); } });
+
+  // 備註：時間取打開當下
+  let noteAt = 0;
+  $('note').addEventListener('click', () => { noteAt = Date.now(); $('noteText').value = ''; open('noteSheet'); setTimeout(() => $('noteText').focus(), 50); });
+  $('noteOk').addEventListener('click', () => {
+    const txt = $('noteText').value.trim(); if (!txt) return close();
+    push({ t: noteAt, type: 'note', text: txt }); close();
+  });
+
+  // 收操
+  $('tired').addEventListener('input', e => $('tiredVal').textContent = e.target.value);
+  $('finish').addEventListener('click', () => { $('pain').value = ''; $('wheeze').value = ''; open('finishSheet'); });
+  $('finishOk').addEventListener('click', () => {
+    if (currentSet()) push({ type: 'set_end' });
+    push({ type: 'finish', tired: +$('tired').value, pain: $('pain').value.trim(), wheeze: $('wheeze').value.trim() });
+    close(); toast('收操已記');
+  });
+
+  // 匯出
+  function payload() {
+    return {
+      app: 'rink-log', version: 1,
+      exported: new Date().toISOString(),
+      obs: state.obs,
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      events: state.events.map(e => ({ ...e, iso: new Date(e.t).toISOString() })),
+    };
+  }
+  function fname(ext) {
+    const d = new Date(); const day = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+    return `rink-${day}-${state.obs || 'x'}.${ext}`;
+  }
+  function csv() {
+    const head = 'iso,epoch_ms,kid,obs,set,type,lap,text\n';
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    return head + state.events.map(e => [new Date(e.t).toISOString(), e.t, e.kid, e.obs, e.set, e.type, e.lap,
+      e.text || (e.type === 'finish' ? `累${e.tired} 痛:${e.pain} 喘:${e.wheeze}` : '')].map(q).join(',')).join('\n');
+  }
+  function download(name, text, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  $('export').addEventListener('click', () => { $('outText').value = JSON.stringify(payload()); open('exportSheet'); });
+  $('copyBtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('outText').value); toast('已複製'); }
+    catch (e) { $('outText').select(); document.execCommand('copy'); toast('已複製'); }
+  });
+  $('csvBtn').addEventListener('click', () => download(fname('csv'), '﻿' + csv(), 'text/csv'));
+  $('shareBtn').addEventListener('click', async () => {
+    const text = JSON.stringify(payload(), null, 1);
+    const file = new File([text], fname('json'), { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: fname('json') }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    download(fname('json'), text, 'application/json');
+  });
+  $('clearBtn').addEventListener('click', () => {
+    if (!confirm('確定清除全部紀錄？請先確認已匯出。')) return;
+    state.events = []; save(); render(); close(); toast('已清除');
+  });
+
+  // 螢幕常亮
+  let wake = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wake) wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { wake = null; keepAwake(); } });
+  document.addEventListener('pointerdown', keepAwake, { once: true });
+
+  render(); tick();
+})();
+</script>
+</body>
+</html>
