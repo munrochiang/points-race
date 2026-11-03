@@ -91,6 +91,10 @@
   .lap .label { font-size: 22px; font-weight: 800; letter-spacing: 4px; }
   .lap .sub { font-size: 15px; opacity: 0.9; font-variant-numeric: tabular-nums; }
   .lap.flash { filter: brightness(1.5); }
+  .lap.untimed { background: #3a7bd5; box-shadow: 0 6px 20px rgba(58,123,213,0.35); }
+  .lap.untimed .big { font-size: 44px; }
+  .chips h3 { width: 100%; font-size: 13px; font-weight: 400; color: var(--text-dim); margin-top: 4px; }
+  .chips .chip.untimed { background: #1f3f6f; }
 
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .ev {
@@ -199,6 +203,7 @@
     <h2>新組：這一組是什麼</h2>
     <div class="chips" id="setChips"></div>
     <div class="field"><label>其他</label><input type="text" id="setCustom" placeholder="自訂名稱"><button class="btn btn-small" id="setCustomOk">開始</button></div>
+    <div class="field"><label></label><label style="width:auto"><input type="checkbox" id="setCustomUntimed"> 自訂組不計時，只記起訖</label></div>
     <button class="btn btn-outline" style="width:100%" data-close>取消</button>
   </div>
 </div>
@@ -271,12 +276,15 @@
   const KEY = 'rink-log:v1';
   // 距離組：name → 預期過線次數（500+D 從半圈處起跑，過線 0.5/1.5/2.5 共 3 次）
   const DIST = { '200': 1, '500+D': 3, '1000': 5, '2000': 10, '3000': 15, '4000': 20, '5000': 25, '6000': 30, '10000': 50 };
-  const SETS = ['大圈跑步', '大圈熱身', '中圈基本', '中圈自主', '起跑', '變位練習', '後超越', '接力', '緩和', ...Object.keys(DIST)];
+  // 計時組：壓每次過線；不計時組：只記開始與結束時間
+  const TIMED_SETS = ['大圈跑步', '起跑', '變位練習', '後超越', ...Object.keys(DIST)];
+  const UNTIMED_SETS = ['大圈熱身', '布鞋基本動作', '溜冰鞋基本動作', '接力', '緩和'];
   const $ = id => document.getElementById(id);
 
   // ── state ──
   // events: {t: epoch ms, kid, obs, type, set, lap?, text?}
   // type: set | set_end | lap | <event name> | note | finish
+  // set events carry timed: false when the set only records start/end
   let state = load() || { kid: '毛', obs: '', events: [] };
 
   function load() {
@@ -293,6 +301,7 @@
   const kidEvents = () => state.events.filter(e => e.kid === state.kid);
 
   // the open set for the current kid (last set without a later set_end)
+  const isUntimed = s => Boolean(s && s.timed === false);
   function currentSet() {
     const evs = kidEvents();
     for (let i = evs.length - 1; i >= 0; i--) {
@@ -334,24 +343,31 @@
     const s = currentSet();
     const laps = currentLaps();
     if (s) {
-      $('setName').innerHTML = `${s.text}<small>${hms(s.t)} 開始</small>`;
+      $('setName').innerHTML = `${s.text}<small>${hms(s.t)} 開始${isUntimed(s) ? '・不計時' : ''}</small>`;
     } else {
       $('setName').innerHTML = `尚未開始<small>按「新組」選項目</small>`;
     }
-    const last = laps.length ? laps[laps.length - 1] : null;
-    let lastSplit = '—';
-    if (laps.length >= 2) lastSplit = sec(laps[laps.length - 1].t - laps[laps.length - 2].t) + 's';
-    else if (laps.length === 1 && s) lastSplit = sec(laps[0].t - s.t) + 's（起跑→第1次過線）';
-    const need = s && DIST[s.text];
-    const total = laps.length && s ? `　總 ${sec(laps[laps.length - 1].t - s.t)}s` : '';
-    $('lapInfo').textContent = `第 ${laps.length}${need ? '／' + need : ''} 圈　上圈 ${lastSplit}${total}`;
+    const lapEl = $('lap');
+    lapEl.classList.toggle('untimed', isUntimed(s));
+    if (isUntimed(s)) {
+      lapEl.querySelector('.label').textContent = '結束這組';
+      $('lapInfo').textContent = '不計時　按一下記結束時間';
+    } else {
+      lapEl.querySelector('.label').textContent = '過線';
+      let lastSplit = '—';
+      if (laps.length >= 2) lastSplit = sec(laps[laps.length - 1].t - laps[laps.length - 2].t) + 's';
+      else if (laps.length === 1 && s) lastSplit = sec(laps[0].t - s.t) + 's（起跑→第1次過線）';
+      const need = s && DIST[s.text];
+      const total = laps.length && s ? `　總 ${sec(laps[laps.length - 1].t - s.t)}s` : '';
+      $('lapInfo').textContent = `第 ${laps.length}${need ? '／' + need : ''} 圈　上圈 ${lastSplit}${total}`;
+    }
 
     // log, newest first
     const log = $('log');
     const rows = state.events.slice(-80).reverse().map((e, idx) => {
       const i = state.events.length - 1 - idx;
       let w = '';
-      if (e.type === 'set') w = `▶ ${e.text}`;
+      if (e.type === 'set') w = `▶ ${e.text}${isUntimed(e) ? '（不計時）' : ''}`;
       else if (e.type === 'set_end') w = `■ 結束`;
       else if (e.type === 'lap') {
         // split vs previous lap of same kid in same set
@@ -398,7 +414,13 @@
     if (now - lastLapAt < 400) return;   // 防連點
     lastLapAt = now;
     if (!currentSet()) { openSet(); return; }
-    const s = currentSet(); const n = currentLaps().length + 1;
+    const s = currentSet();
+    if (isUntimed(s)) {
+      push({ t: now, type: 'set_end' });
+      toast(`${state.kid} ${s.text} 結束，${sec(now - s.t)}s`); vib([30, 60, 30]);
+      return;
+    }
+    const n = currentLaps().length + 1;
     push({ t: now, type: 'lap', lap: n });
     vib(30);
     if (DIST[s.text] && n >= DIST[s.text]) {
@@ -435,17 +457,19 @@
   document.querySelectorAll('.sheet-bg').forEach(s => s.addEventListener('click', e => { if (e.target === s && Date.now() - openedAt > 500) close(); }));
 
   // 新組
-  $('setChips').innerHTML = SETS.map(n => `<button class="btn chip" data-n="${n}">${n}</button>`).join('');
-  function openSet() { $('setCustom').value = ''; open('setSheet'); }
-  function startSet(name) {
+  const chip = (n, untimed) => `<button class="btn chip${untimed ? ' untimed' : ''}" data-n="${n}" data-untimed="${untimed ? 1 : ''}">${n}</button>`;
+  $('setChips').innerHTML = '<h3>計時：壓每次過線</h3>' + TIMED_SETS.map(n => chip(n, false)).join('') +
+    '<h3>不計時：只記開始與結束</h3>' + UNTIMED_SETS.map(n => chip(n, true)).join('');
+  function openSet() { $('setCustom').value = ''; $('setCustomUntimed').checked = false; open('setSheet'); }
+  function startSet(name, untimed) {
     if (!name) return;
     if (currentSet()) push({ type: 'set_end' });
-    push({ type: 'set', text: name });
-    close(); vib(30); toast(`${state.kid} ▶ ${name}`);
+    push(untimed ? { type: 'set', text: name, timed: false } : { type: 'set', text: name });
+    close(); vib(30); toast(`${state.kid} ▶ ${name}${untimed ? '（不計時）' : ''}`);
   }
   $('newSet').addEventListener('click', openSet);
-  $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startSet(b.dataset.n); });
-  $('setCustomOk').addEventListener('click', () => startSet($('setCustom').value.trim()));
+  $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startSet(b.dataset.n, Boolean(b.dataset.untimed)); });
+  $('setCustomOk').addEventListener('click', () => startSet($('setCustom').value.trim(), $('setCustomUntimed').checked));
   $('endSet').addEventListener('click', () => { if (currentSet()) { push({ type: 'set_end' }); toast('組結束'); } });
 
   // 異常：先記時間，再補種類
