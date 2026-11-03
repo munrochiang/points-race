@@ -52,23 +52,12 @@
   .header h1 { font-size: 16px; font-weight: 700; white-space: nowrap; }
   .clock { font-variant-numeric: tabular-nums; color: var(--text-dim); font-size: 13px; }
 
-  .seg { display: flex; border-radius: 8px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.2); }
-  .seg button {
-    border: none; background: transparent; color: var(--text);
-    padding: 8px 14px; font-size: 15px; font-weight: 700; font-family: inherit;
-  }
-  .seg button.on { background: var(--accent); }
-  .seg.kid button.on[data-v="毛"] { background: #4a5a74; }
-  .seg.kid button.on[data-v="爪"] { background: #4f7f6a; }
-  .obs { width: 44px; padding: 7px 6px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2);
-         background: transparent; color: var(--text); font-size: 15px; text-align: center; font-family: inherit; }
 
   /* ── Main ── */
   .main { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; }
 
-  .setbar { display: flex; align-items: center; gap: 8px; }
-  .setbar .set-name { flex: 1; font-size: 17px; font-weight: 700; }
-  .setbar .set-name small { color: var(--text-dim); font-weight: 400; font-size: 13px; margin-left: 6px; }
+  .setbtn { background: var(--card); padding: 12px; font-size: 18px; display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+  .setbtn small { color: var(--text-dim); font-weight: 400; font-size: 13px; }
 
   .btn {
     border: none; border-radius: 10px; font-weight: 700; cursor: pointer;
@@ -79,21 +68,19 @@
   .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.25); padding: 8px 12px; font-size: 14px; }
   .btn-small { background: var(--card); padding: 8px 12px; font-size: 14px; }
 
-  .lap {
-    background: var(--accent);
-    border-radius: 16px;
-    min-height: 34vh;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 4px;
+  .lap { display: flex; gap: 8px; min-height: 34vh; }
+  .half {
+    flex: 1; background: var(--accent); border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.35);
   }
-  .lap .big { font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-  .lap .label { font-size: 22px; font-weight: 800; letter-spacing: 4px; }
-  .lap .sub { font-size: 15px; opacity: 0.9; font-variant-numeric: tabular-nums; }
-  .lap.flash { filter: brightness(1.5); }
-  .lap.untimed { background: #333a44; }
-  .lap.ready { background: #35584b; }
-  .lap.untimed .big { font-size: 44px; }
+  .half .big { font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  .half .label { font-size: 20px; font-weight: 800; letter-spacing: 3px; }
+  .half .sub { font-size: 13px; opacity: 0.85; font-variant-numeric: tabular-nums; text-align: center; padding: 0 6px; }
+  .half.flash { filter: brightness(1.5); }
+  .half.running { background: #35584b; }
+  .half.off { background: #22262b; color: var(--text-dim); box-shadow: none; }
+  .lapbtn { background: #333a44; }
   .chips h3 { width: 100%; font-size: 13px; font-weight: 400; color: var(--text-dim); margin-top: 4px; }
   .chips .chip.untimed { background: #2c3139; }
 
@@ -119,8 +106,6 @@
   .row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
          font-size: 14px; font-variant-numeric: tabular-nums; }
   .row .t { color: var(--text-dim); width: 64px; }
-  .row .k { width: 22px; font-weight: 700; }
-  .row .k.毛 { color: #9db3d6; } .row .k.爪 { color: #8fc3ad; }
   .row .w { flex: 1; }
   .row .w b { color: var(--warn); }
   .row .del { color: var(--text-dim); padding: 2px 8px; font-size: 16px; background: none; border: none; }
@@ -159,25 +144,23 @@
 
 <div class="header">
   <h1>場邊壓秒</h1>
-  <div class="seg kid" id="kidSeg">
-    <button data-v="毛">毛</button>
-    <button data-v="爪">爪</button>
-  </div>
-  <input class="obs" id="obs" placeholder="誰" maxlength="2">
   <span class="clock" id="clock">--:--:--</span>
 </div>
 
 <div class="main">
-  <div class="setbar">
-    <div class="set-name" id="setName">尚未開始<small>按「新組」選項目</small></div>
-    <button class="btn btn-small" id="newSet">新組</button>
-    <button class="btn btn-outline" id="endSet">結束組</button>
-  </div>
+  <button class="btn setbtn" id="setBtn"><span id="setName">未知距離</span><small id="setState">預設</small></button>
 
-  <div class="lap btn" id="lap">
-    <div class="label">過線</div>
-    <div class="big" id="lapClock">0.0</div>
-    <div class="sub" id="lapInfo">第 0 圈　上圈 —</div>
+  <div class="lap">
+    <button class="btn half" id="startBtn">
+      <div class="label" id="startLabel">開始</div>
+      <div class="big" id="totalClock">0.0</div>
+      <div class="sub" id="startInfo">總時</div>
+    </button>
+    <button class="btn half lapbtn" id="lapBtn">
+      <div class="label">過線</div>
+      <div class="big" id="lapClock">0.0</div>
+      <div class="sub" id="lapInfo">第 0 圈</div>
+    </button>
   </div>
 
   <div class="grid">
@@ -201,9 +184,9 @@
 <!-- 新組 -->
 <div class="sheet-bg" id="setSheet">
   <div class="sheet">
-    <h2>新組：這一組是什麼</h2>
+    <h2>下一組是什麼</h2>
     <div class="chips" id="setChips"></div>
-    <div class="field"><label>其他</label><input type="text" id="setCustom" placeholder="自訂名稱"><button class="btn btn-small" id="setCustomOk">開始</button></div>
+    <div class="field"><label>其他</label><input type="text" id="setCustom" placeholder="自訂名稱"><button class="btn btn-small" id="setCustomOk">選這個</button></div>
     <div class="field"><label></label><label style="width:auto"><input type="checkbox" id="setCustomUntimed"> 自訂組不計時，只記起訖</label></div>
     <button class="btn btn-outline" style="width:100%" data-close>取消</button>
   </div>
@@ -255,6 +238,7 @@
 <div class="sheet-bg" id="exportSheet">
   <div class="sheet">
     <h2>匯出</h2>
+    <div class="field"><label>選手</label><input type="text" id="athlete" placeholder="毛／爪"></div>
     <div class="stack">
       <button class="btn btn-primary" id="shareBtn">分享 JSON 檔</button>
       <button class="btn btn-small" id="copyBtn">複製 JSON 文字</button>
@@ -264,7 +248,7 @@
     </div>
     <textarea class="out" id="outText" readonly></textarea>
     <div class="hint">
-      每筆都是手機的絕對時間（epoch ms），兩支手機各自記、各自匯出，合併時直接用時間對齊，不需要同時按開始。
+      每筆都是手機的絕對時間（epoch ms），兩支手機各記一個孩子、各自匯出，合併時直接用時間對齊。
       上課前請確認兩支手機時間都是自動校時。
     </div>
   </div>
@@ -284,11 +268,12 @@
   const $ = id => document.getElementById(id);
 
   // ── state ──
-  // events: {t: epoch ms, kid, obs, type, set, lap?, text?}
+  // events: {t: epoch ms, type, set, lap?, text?}
   // type: set | start | set_end | lap | <event name> | note | finish
-  // set = 選好組別（準備中）；start = 第一次按大鈕，計時從這裡起算
-  // set events carry timed: false when the set only records start/end
-  let state = load() || { kid: '毛', obs: '', events: [] };
+  // set 與 start 同時寫入（按「開始」那一刻）；pending = 下一組要用的組別，未選就是未知距離
+  const DEFAULT_SET = { text: '未知距離', timed: true };
+  let state = load() || { athlete: '', pending: null, events: [] };
+  state.pending = state.pending || null;
 
   function load() {
     try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
@@ -301,12 +286,12 @@
   const pad = n => String(n).padStart(2, '0');
   const hms = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
   const sec = ms => (ms / 1000).toFixed(1);
-  const kidEvents = () => state.events.filter(e => e.kid === state.kid);
+  const allEvents = () => state.events;
 
-  // the open set for the current kid (last set without a later set_end)
+  // the open set (last set without a later set_end)
   const isUntimed = s => Boolean(s && s.timed === false);
   function currentSet() {
-    const evs = kidEvents();
+    const evs = allEvents();
     for (let i = evs.length - 1; i >= 0; i--) {
       if (evs[i].type === 'set_end') return null;
       if (evs[i].type === 'set') return evs[i];
@@ -317,13 +302,13 @@
   function currentStart() {
     const s = currentSet();
     if (!s) return null;
-    return kidEvents().find(e => e.type === 'start' && e.t >= s.t) || null;
+    return allEvents().find(e => e.type === 'start' && e.t >= s.t) || null;
   }
-  // laps in the current set for the current kid
+  // laps in the current set
   function currentLaps() {
     const st = currentStart();
     if (!st) return [];
-    return kidEvents().filter(e => e.type === 'lap' && e.t >= st.t);
+    return allEvents().filter(e => e.type === 'lap' && e.t >= st.t);
   }
 
   function vib(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
@@ -336,8 +321,6 @@
 
   function push(ev) {
     ev.t = ev.t || Date.now();
-    ev.kid = ev.kid || state.kid;
-    ev.obs = state.obs;
     const s = currentSet();
     if (s && ev.type !== 'set') ev.set = s.text;
     state.events.push(ev);
@@ -346,39 +329,31 @@
 
   // ── render ──
   function render() {
-    document.querySelectorAll('#kidSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === state.kid));
-    $('obs').value = state.obs;
-
     const s = currentSet();
     const st = currentStart();
     const laps = currentLaps();
-    if (s && st) {
-      $('setName').innerHTML = `${s.text}<small>${hms(st.t)} 開始${isUntimed(s) ? '・不計時' : ''}</small>`;
-    } else if (s) {
-      $('setName').innerHTML = `${s.text}<small>準備中${isUntimed(s) ? '・不計時' : ''}</small>`;
+    const running = Boolean(s && st);
+    if (running) {
+      $('setName').textContent = s.text;
+      $('setState').textContent = `${hms(st.t)} 開始${isUntimed(s) ? '・不計時' : ''}`;
     } else {
-      $('setName').innerHTML = `尚未選組<small>按「新組」選項目</small>`;
+      const p = state.pending || DEFAULT_SET;
+      $('setName').textContent = p.text;
+      $('setState').textContent = state.pending ? (p.timed ? '下一組' : '下一組・不計時') : '預設・點此選組';
     }
-    const lapEl = $('lap');
-    lapEl.classList.toggle('untimed', isUntimed(s));
-    lapEl.classList.toggle('ready', Boolean(s && !st));
-    if (!s) {
-      lapEl.querySelector('.label').textContent = '選組';
-      $('lapInfo').textContent = '先按「新組」';
-    } else if (!st) {
-      lapEl.querySelector('.label').textContent = isUntimed(s) ? '開始' : '起跑';
-      $('lapInfo').textContent = isUntimed(s) ? '按一下記開始時間' : '起跑那一刻按';
-    } else if (isUntimed(s)) {
-      lapEl.querySelector('.label').textContent = '結束這組';
-      $('lapInfo').textContent = '不計時　按一下記結束時間';
-    } else {
-      lapEl.querySelector('.label').textContent = '過線';
+    $('startBtn').classList.toggle('running', running);
+    $('startLabel').textContent = running ? '結束' : '開始';
+    $('startInfo').textContent = running ? '總時' : '按下即起算';
+    const lapOn = running && !isUntimed(s);
+    $('lapBtn').classList.toggle('off', !lapOn);
+    if (lapOn) {
       let lastSplit = '—';
       if (laps.length >= 2) lastSplit = sec(laps[laps.length - 1].t - laps[laps.length - 2].t) + 's';
-      else if (laps.length === 1) lastSplit = sec(laps[0].t - st.t) + 's（起跑→第1次過線）';
+      else if (laps.length === 1) lastSplit = sec(laps[0].t - st.t) + 's';
       const need = DIST[s.text];
-      const total = laps.length ? `　總 ${sec(laps[laps.length - 1].t - st.t)}s` : '';
-      $('lapInfo').textContent = `第 ${laps.length}${need ? '／' + need : ''} 圈　上圈 ${lastSplit}${total}`;
+      $('lapInfo').textContent = `第 ${laps.length}${need ? '／' + need : ''} 圈　上圈 ${lastSplit}`;
+    } else {
+      $('lapInfo').textContent = running ? '不計時' : '';
     }
 
     // log, newest first
@@ -390,11 +365,10 @@
       else if (e.type === 'start') w = `▶ 開始`;
       else if (e.type === 'set_end') w = `■ 結束`;
       else if (e.type === 'lap') {
-        // split vs previous lap of same kid in same set
+        // split vs previous lap in the same set
         let prev = null;
         for (let j = i - 1; j >= 0; j--) {
           const p = state.events[j];
-          if (p.kid !== e.kid) continue;
           if (p.type === 'lap' || p.type === 'start') { prev = p; break; }
           if (p.type === 'set') break;
         }
@@ -405,7 +379,7 @@
       else if (e.type === 'finish') w = `收操 累${e.tired} 痛:${e.pain || '無'} 喘:${e.wheeze || '無'}`;
       else w = `<b>${e.type}</b>`;
       return `<div class="row ${e.type === 'set' ? 'set' : ''}">
-        <span class="t">${hms(e.t)}</span><span class="k ${e.kid}">${e.kid}</span>
+        <span class="t">${hms(e.t)}</span>
         <span class="w">${w}</span><button class="del" data-i="${i}">✕</button></div>`;
     });
     log.innerHTML = rows.join('') || '<div class="row" style="color:var(--text-dim)">還沒有紀錄</div>';
@@ -414,46 +388,51 @@
   // live clocks
   function tick() {
     $('clock').textContent = hms(Date.now());
-    const laps = currentLaps(); const st = currentStart();
-    const from = laps.length ? laps[laps.length - 1].t : (st ? st.t : null);
+    const laps = currentLaps(); const st = currentStart(); const s = currentSet();
+    $('totalClock').textContent = st ? sec(Date.now() - st.t) : '0.0';
+    const from = laps.length ? laps[laps.length - 1].t : (st && !isUntimed(s) ? st.t : null);
     $('lapClock').textContent = from ? sec(Date.now() - from) : '0.0';
   }
   setInterval(tick, 100);
 
   // ── actions ──
-  $('kidSeg').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    state.kid = b.dataset.v; save(); render();
-  });
-  $('obs').addEventListener('input', e => { state.obs = e.target.value.trim(); save(); });
+  const flash = el => { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120); };
+  let lastPressAt = 0;
+  const debounced = () => { const now = Date.now(); if (now - lastPressAt < 400) return 0; lastPressAt = now; return now; };
 
-  let lastLapAt = 0;
-  $('lap').addEventListener('pointerdown', e => {
+  // 左半：開始／結束
+  $('startBtn').addEventListener('pointerdown', e => {
     e.preventDefault();
-    const now = Date.now();
-    if (now - lastLapAt < 400) return;   // 防連點
-    lastLapAt = now;
-    if (!currentSet()) { openSet(); return; }
+    const now = debounced(); if (!now) return;
     const s = currentSet(); const st = currentStart();
-    if (!st) {
-      push({ t: now, type: 'start' }); vib(60);
-      toast(`${state.kid} ${s.text} ▶ 開始`);
-      const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
-      return;
-    }
-    if (isUntimed(s)) {
+    if (!s || !st) {
+      const p = state.pending || DEFAULT_SET;
+      push(p.timed ? { t: now, type: 'set', text: p.text } : { t: now, type: 'set', text: p.text, timed: false });
+      push({ t: now, type: 'start' });
+      state.pending = null; save(); render();
+      vib(60); toast(`${p.text} ▶ 開始`);
+    } else {
       push({ t: now, type: 'set_end' });
-      toast(`${state.kid} ${s.text} 結束，${sec(now - st.t)}s`); vib([30, 60, 30]);
-      return;
+      vib([30, 60, 30]); toast(`${s.text} 結束 ${sec(now - st.t)}s`);
     }
+    flash($('startBtn'));
+  });
+
+  // 右半：過線
+  $('lapBtn').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const now = debounced(); if (!now) return;
+    const s = currentSet(); const st = currentStart();
+    if (!s || !st) { toast('先按「開始」'); return; }
+    if (isUntimed(s)) { toast('這組不計時'); return; }
     const n = currentLaps().length + 1;
     push({ t: now, type: 'lap', lap: n });
     vib(30);
     if (DIST[s.text] && n >= DIST[s.text]) {
       push({ t: now, type: 'set_end' });
-      toast(`${state.kid} ${s.text} 完成 ${sec(now - st.t)}s`); vib([30, 60, 30]);
+      toast(`${s.text} 完成 ${sec(now - st.t)}s`); vib([30, 60, 30]);
     }
-    const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
+    flash($('lapBtn'));
   });
 
   document.querySelectorAll('.ev[data-ev]').forEach(b => b.addEventListener('pointerdown', e => {
@@ -461,7 +440,7 @@
     push({ type: b.dataset.ev });
     vib(15);
     b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 150);
-    toast(`${state.kid} ${b.dataset.ev}`);
+    toast(b.dataset.ev);
   }));
 
   $('undo').addEventListener('click', () => {
@@ -486,17 +465,18 @@
   const chip = (n, untimed) => `<button class="btn chip${untimed ? ' untimed' : ''}" data-n="${n}" data-untimed="${untimed ? 1 : ''}">${n}</button>`;
   $('setChips').innerHTML = '<h3>計時：壓每次過線</h3>' + TIMED_SETS.map(n => chip(n, false)).join('') +
     '<h3>不計時：只記開始與結束</h3>' + UNTIMED_SETS.map(n => chip(n, true)).join('');
-  function openSet() { $('setCustom').value = ''; $('setCustomUntimed').checked = false; open('setSheet'); }
-  function startSet(name, untimed) {
-    if (!name) return;
-    if (currentSet()) push({ type: 'set_end' });
-    push(untimed ? { type: 'set', text: name, timed: false } : { type: 'set', text: name });
-    close(); vib(30); toast(`${state.kid} 選組 ${name}，起跑時按大鈕`);
+  function openSet() {
+    if (currentSet() && currentStart()) { toast('先按「結束」'); return; }
+    $('setCustom').value = ''; $('setCustomUntimed').checked = false; open('setSheet');
   }
-  $('newSet').addEventListener('click', openSet);
-  $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startSet(b.dataset.n, Boolean(b.dataset.untimed)); });
-  $('setCustomOk').addEventListener('click', () => startSet($('setCustom').value.trim(), $('setCustomUntimed').checked));
-  $('endSet').addEventListener('click', () => { if (currentSet()) { push({ type: 'set_end' }); toast('組結束'); } });
+  function chooseSet(name, untimed) {
+    if (!name) return;
+    state.pending = { text: name, timed: !untimed }; save(); render();
+    close(); vib(30);
+  }
+  $('setBtn').addEventListener('click', openSet);
+  $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) chooseSet(b.dataset.n, Boolean(b.dataset.untimed)); });
+  $('setCustomOk').addEventListener('click', () => chooseSet($('setCustom').value.trim(), $('setCustomUntimed').checked));
 
   // 異常：先記時間，再補種類
   $('abn').addEventListener('pointerdown', e => {
@@ -508,7 +488,7 @@
     if (!text) return;
     const last = state.events[state.events.length - 1];
     if (last && last.type === '異常') { last.text = text; save(); render(); }
-    close(); toast(`${state.kid} 異常：${text}`);
+    close(); toast(`異常：${text}`);
   }
   $('abnChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) tagAbn(b.dataset.n); });
   $('abnCustomOk').addEventListener('click', () => tagAbn($('abnCustom').value.trim()));
@@ -535,19 +515,19 @@
     return {
       app: 'rink-log', version: 1,
       exported: new Date().toISOString(),
-      obs: state.obs,
+      athlete: state.athlete,
       tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
       events: state.events.map(e => ({ ...e, iso: new Date(e.t).toISOString() })),
     };
   }
   function fname(ext) {
     const d = new Date(); const day = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
-    return `rink-${day}-${state.obs || 'x'}.${ext}`;
+    return `rink-${day}-${state.athlete || 'x'}.${ext}`;
   }
   function csv() {
-    const head = 'iso,epoch_ms,kid,obs,set,type,lap,text\n';
+    const head = 'iso,epoch_ms,athlete,set,type,lap,text\n';
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    return head + state.events.map(e => [new Date(e.t).toISOString(), e.t, e.kid, e.obs, e.set, e.type, e.lap,
+    return head + state.events.map(e => [new Date(e.t).toISOString(), e.t, state.athlete, e.set, e.type, e.lap,
       e.text || (e.type === 'finish' ? `累${e.tired} 痛:${e.pain} 喘:${e.wheeze}` : '')].map(q).join(',')).join('\n');
   }
   function download(name, text, type) {
@@ -555,7 +535,8 @@
     a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
-  $('export').addEventListener('click', () => { $('outText').value = JSON.stringify(payload()); open('exportSheet'); });
+  $('athlete').addEventListener('input', e => { state.athlete = e.target.value.trim(); save(); $('outText').value = JSON.stringify(payload()); });
+  $('export').addEventListener('click', () => { $('athlete').value = state.athlete || ''; $('outText').value = JSON.stringify(payload()); open('exportSheet'); });
   $('copyBtn').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($('outText').value); toast('已複製'); }
     catch (e) { $('outText').select(); document.execCommand('copy'); toast('已複製'); }
