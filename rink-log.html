@@ -103,6 +103,7 @@
   .ev.warn { background: #5a4a1a; }
   .ev.good { background: #1a4a3a; }
   .ev.hit { filter: brightness(1.8); }
+  .ev.wide { grid-column: 1 / -1; padding: 14px 4px; }
 
   .tools { display: flex; gap: 8px; }
   .tools .btn { flex: 1; }
@@ -179,6 +180,7 @@
     <button class="btn ev" data-ev="跟">跟</button>
     <button class="btn ev good" data-ev="開放超越">開放超越</button>
     <button class="btn ev warn" data-ev="掉隊">掉隊</button>
+    <button class="btn ev bad wide" id="abn">異常</button>
   </div>
 
   <div class="tools">
@@ -198,6 +200,22 @@
     <div class="chips" id="setChips"></div>
     <div class="field"><label>其他</label><input type="text" id="setCustom" placeholder="自訂名稱"><button class="btn btn-small" id="setCustomOk">開始</button></div>
     <button class="btn btn-outline" style="width:100%" data-close>取消</button>
+  </div>
+</div>
+
+<!-- 異常 -->
+<div class="sheet-bg" id="abnSheet">
+  <div class="sheet">
+    <h2>異常：是哪一種（時間已記在按下的瞬間）</h2>
+    <div class="chips" id="abnChips">
+      <button class="btn chip" data-n="喘">喘</button>
+      <button class="btn chip" data-n="摔">摔</button>
+      <button class="btn chip" data-n="痛">痛</button>
+      <button class="btn chip" data-n="不舒服">不舒服</button>
+      <button class="btn chip" data-n="停下">停下</button>
+    </div>
+    <div class="field"><label>其他</label><input type="text" id="abnCustom" placeholder="自己打"><button class="btn btn-small" id="abnCustomOk">記下</button></div>
+    <button class="btn btn-outline" style="width:100%" data-close>先關掉，稍後補備註</button>
   </div>
 </div>
 
@@ -347,6 +365,7 @@
         w = `圈 ${e.lap}` + (prev ? `　<b>${sec(e.t - prev.t)}</b>` : '');
       }
       else if (e.type === 'note') w = `📝 ${e.text}`;
+      else if (e.type === '異常') w = `<b>⚠ 異常</b>${e.text ? '：' + e.text : ''}`;
       else if (e.type === 'finish') w = `收操 累${e.tired} 痛:${e.pain || '無'} 喘:${e.wheeze || '無'}`;
       else w = `<b>${e.type}</b>`;
       return `<div class="row ${e.type === 'set' ? 'set' : ''}">
@@ -389,7 +408,7 @@
     const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
   });
 
-  document.querySelectorAll('.ev').forEach(b => b.addEventListener('pointerdown', e => {
+  document.querySelectorAll('.ev[data-ev]').forEach(b => b.addEventListener('pointerdown', e => {
     e.preventDefault();
     push({ type: b.dataset.ev });
     vib(15);
@@ -428,6 +447,21 @@
   $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startSet(b.dataset.n); });
   $('setCustomOk').addEventListener('click', () => startSet($('setCustom').value.trim()));
   $('endSet').addEventListener('click', () => { if (currentSet()) { push({ type: 'set_end' }); toast('組結束'); } });
+
+  // 異常：先記時間，再補種類
+  $('abn').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    push({ type: '異常' }); vib([30, 60, 30]);
+    $('abnCustom').value = ''; open('abnSheet');
+  });
+  function tagAbn(text) {
+    if (!text) return;
+    const last = state.events[state.events.length - 1];
+    if (last && last.type === '異常') { last.text = text; save(); render(); }
+    close(); toast(`${state.kid} 異常：${text}`);
+  }
+  $('abnChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) tagAbn(b.dataset.n); });
+  $('abnCustomOk').addEventListener('click', () => tagAbn($('abnCustom').value.trim()));
 
   // 備註：時間取打開當下
   let noteAt = 0;
