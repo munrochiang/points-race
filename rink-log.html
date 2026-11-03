@@ -92,6 +92,7 @@
   .lap .sub { font-size: 15px; opacity: 0.9; font-variant-numeric: tabular-nums; }
   .lap.flash { filter: brightness(1.5); }
   .lap.untimed { background: #3a7bd5; box-shadow: 0 6px 20px rgba(58,123,213,0.35); }
+  .lap.ready { background: var(--success); color: #062; box-shadow: 0 6px 20px rgba(0,184,148,0.35); }
   .lap.untimed .big { font-size: 44px; }
   .chips h3 { width: 100%; font-size: 13px; font-weight: 400; color: var(--text-dim); margin-top: 4px; }
   .chips .chip.untimed { background: #1f3f6f; }
@@ -284,7 +285,8 @@
 
   // ── state ──
   // events: {t: epoch ms, kid, obs, type, set, lap?, text?}
-  // type: set | set_end | lap | <event name> | note | finish
+  // type: set | start | set_end | lap | <event name> | note | finish
+  // set = 選好組別（準備中）；start = 第一次按大鈕，計時從這裡起算
   // set events carry timed: false when the set only records start/end
   let state = load() || { kid: '毛', obs: '', events: [] };
 
@@ -311,11 +313,17 @@
     }
     return null;
   }
+  // start event of the current set, or null while still preparing
+  function currentStart() {
+    const s = currentSet();
+    if (!s) return null;
+    return kidEvents().find(e => e.type === 'start' && e.t >= s.t) || null;
+  }
   // laps in the current set for the current kid
   function currentLaps() {
-    const s = currentSet();
-    if (!s) return [];
-    return kidEvents().filter(e => e.type === 'lap' && e.t >= s.t);
+    const st = currentStart();
+    if (!st) return [];
+    return kidEvents().filter(e => e.type === 'lap' && e.t >= st.t);
   }
 
   function vib(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
@@ -342,24 +350,34 @@
     $('obs').value = state.obs;
 
     const s = currentSet();
+    const st = currentStart();
     const laps = currentLaps();
-    if (s) {
-      $('setName').innerHTML = `${s.text}<small>${hms(s.t)} 開始${isUntimed(s) ? '・不計時' : ''}</small>`;
+    if (s && st) {
+      $('setName').innerHTML = `${s.text}<small>${hms(st.t)} 開始${isUntimed(s) ? '・不計時' : ''}</small>`;
+    } else if (s) {
+      $('setName').innerHTML = `${s.text}<small>準備中${isUntimed(s) ? '・不計時' : ''}</small>`;
     } else {
-      $('setName').innerHTML = `尚未開始<small>按「新組」選項目</small>`;
+      $('setName').innerHTML = `尚未選組<small>按「新組」選項目</small>`;
     }
     const lapEl = $('lap');
     lapEl.classList.toggle('untimed', isUntimed(s));
-    if (isUntimed(s)) {
+    lapEl.classList.toggle('ready', Boolean(s && !st));
+    if (!s) {
+      lapEl.querySelector('.label').textContent = '選組';
+      $('lapInfo').textContent = '先按「新組」';
+    } else if (!st) {
+      lapEl.querySelector('.label').textContent = isUntimed(s) ? '開始' : '起跑';
+      $('lapInfo').textContent = isUntimed(s) ? '按一下記開始時間' : '起跑那一刻按';
+    } else if (isUntimed(s)) {
       lapEl.querySelector('.label').textContent = '結束這組';
       $('lapInfo').textContent = '不計時　按一下記結束時間';
     } else {
       lapEl.querySelector('.label').textContent = '過線';
       let lastSplit = '—';
       if (laps.length >= 2) lastSplit = sec(laps[laps.length - 1].t - laps[laps.length - 2].t) + 's';
-      else if (laps.length === 1 && s) lastSplit = sec(laps[0].t - s.t) + 's（起跑→第1次過線）';
-      const need = s && DIST[s.text];
-      const total = laps.length && s ? `　總 ${sec(laps[laps.length - 1].t - s.t)}s` : '';
+      else if (laps.length === 1) lastSplit = sec(laps[0].t - st.t) + 's（起跑→第1次過線）';
+      const need = DIST[s.text];
+      const total = laps.length ? `　總 ${sec(laps[laps.length - 1].t - st.t)}s` : '';
       $('lapInfo').textContent = `第 ${laps.length}${need ? '／' + need : ''} 圈　上圈 ${lastSplit}${total}`;
     }
 
@@ -368,7 +386,8 @@
     const rows = state.events.slice(-80).reverse().map((e, idx) => {
       const i = state.events.length - 1 - idx;
       let w = '';
-      if (e.type === 'set') w = `▶ ${e.text}${isUntimed(e) ? '（不計時）' : ''}`;
+      if (e.type === 'set') w = `選組 ${e.text}${isUntimed(e) ? '（不計時）' : ''}`;
+      else if (e.type === 'start') w = `▶ 開始`;
       else if (e.type === 'set_end') w = `■ 結束`;
       else if (e.type === 'lap') {
         // split vs previous lap of same kid in same set
@@ -376,8 +395,8 @@
         for (let j = i - 1; j >= 0; j--) {
           const p = state.events[j];
           if (p.kid !== e.kid) continue;
-          if (p.type === 'lap') { prev = p; break; }
-          if (p.type === 'set') { prev = p; break; }
+          if (p.type === 'lap' || p.type === 'start') { prev = p; break; }
+          if (p.type === 'set') break;
         }
         w = `圈 ${e.lap}` + (prev ? `　<b>${sec(e.t - prev.t)}</b>` : '');
       }
@@ -395,8 +414,8 @@
   // live clocks
   function tick() {
     $('clock').textContent = hms(Date.now());
-    const laps = currentLaps(); const s = currentSet();
-    const from = laps.length ? laps[laps.length - 1].t : (s ? s.t : null);
+    const laps = currentLaps(); const st = currentStart();
+    const from = laps.length ? laps[laps.length - 1].t : (st ? st.t : null);
     $('lapClock').textContent = from ? sec(Date.now() - from) : '0.0';
   }
   setInterval(tick, 100);
@@ -415,10 +434,16 @@
     if (now - lastLapAt < 400) return;   // 防連點
     lastLapAt = now;
     if (!currentSet()) { openSet(); return; }
-    const s = currentSet();
+    const s = currentSet(); const st = currentStart();
+    if (!st) {
+      push({ t: now, type: 'start' }); vib(60);
+      toast(`${state.kid} ${s.text} ▶ 開始`);
+      const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
+      return;
+    }
     if (isUntimed(s)) {
       push({ t: now, type: 'set_end' });
-      toast(`${state.kid} ${s.text} 結束，${sec(now - s.t)}s`); vib([30, 60, 30]);
+      toast(`${state.kid} ${s.text} 結束，${sec(now - st.t)}s`); vib([30, 60, 30]);
       return;
     }
     const n = currentLaps().length + 1;
@@ -426,7 +451,7 @@
     vib(30);
     if (DIST[s.text] && n >= DIST[s.text]) {
       push({ t: now, type: 'set_end' });
-      toast(`${state.kid} ${s.text} 完成 ${sec(now - s.t)}s`); vib([30, 60, 30]);
+      toast(`${state.kid} ${s.text} 完成 ${sec(now - st.t)}s`); vib([30, 60, 30]);
     }
     const el = $('lap'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120);
   });
@@ -466,7 +491,7 @@
     if (!name) return;
     if (currentSet()) push({ type: 'set_end' });
     push(untimed ? { type: 'set', text: name, timed: false } : { type: 'set', text: name });
-    close(); vib(30); toast(`${state.kid} ▶ ${name}${untimed ? '（不計時）' : ''}`);
+    close(); vib(30); toast(`${state.kid} 選組 ${name}，起跑時按大鈕`);
   }
   $('newSet').addEventListener('click', openSet);
   $('setChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startSet(b.dataset.n, Boolean(b.dataset.untimed)); });
